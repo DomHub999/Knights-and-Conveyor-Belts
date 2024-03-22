@@ -10,8 +10,12 @@ const magenta = rl.Color{ .r = 255, .g = 0, .b = 255, .a = 255 };
 const inc_x = isometric.orthToIsoWrapIncrementX(TILE_SIZE_X);
 const inc_y = isometric.orthToIsoWrapIncrementY(TILE_SIZE_Y);
 
-const TILE_SIZE_X: f32 = 127;
-const TILE_SIZE_Y: f32 = 96;
+// const TILE_SIZE_X: f32 = 127;
+// const TILE_SIZE_Y: f32 = 96;
+
+pub const TILE_SIZE_X: f32 = 129;
+pub const TILE_SIZE_Y: f32 = 65;
+
 
 const MAP_WIDTH: usize = 3;
 const MAP_HEIGT: usize = 4;
@@ -27,10 +31,11 @@ const Tile = enum {
 
 var matrix = [MAP_WIDTH * MAP_HEIGT]Tile{ .GRASS, .GRASS, .GRASS, .NONE, .GRASS, .NONE, .GRASS, .GRASS, .GRASS, .GRASS, .GRASS, .NONE };
 
+
 pub fn main() !void {
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Knights and Conveyor Belts");
 
-    grass_tile = rl.LoadImage("resources/grass_tile.png");
+    grass_tile = rl.LoadImage("resources/grey_tile.png");
     rl.ImageColorReplace(&grass_tile, magenta, rl.BLANK);
     dirt_tile = rl.LoadImage("resources/dirt_tile.png");
     rl.ImageColorReplace(&dirt_tile, magenta, rl.BLANK);
@@ -86,11 +91,15 @@ pub fn main() !void {
         var buf_grid_x = [_]u8{0} ** 16;
         var buf_grid_y = [_]u8{0} ** 16;
 
-        const mouse_x_map_adj = mouse_x - map_position_x;
-        const mouse_y_map_adj = mouse_y - map_position_y;
+        
+
+        const mouse_x_map_adj:i32 = mouse_x - map_position_x;
+        const mouse_y_map_adj:i32 = mouse_y - map_position_y;
 
         const grid_x = iso_matrix.isoToOrtX(mouse_x_map_adj, mouse_y_map_adj);
         const grid_y = iso_matrix.isoToOrtY(mouse_x_map_adj, mouse_y_map_adj);
+        
+
         if (grid_x != null and grid_y != null) {
             const map_index = util.indexTwoDimArray(grid_x.?, grid_y.?, MAP_WIDTH);
             if (map_index < MAP_WIDTH * MAP_HEIGT) {
@@ -99,7 +108,12 @@ pub fn main() !void {
                 util.usizeToString(grid_x.?, &buf_grid_x);
                 util.usizeToString(grid_y.?, &buf_grid_y);
                 if (mouse_on_screen and rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT)) {
-                    matrix[map_index] = .DIRT;
+                    matrix[map_index] = switch(matrix[map_index]){
+                        .GRASS => .NONE,
+                        .NONE => .GRASS,
+                        else => .GRASS,
+                    };
+                    // matrix[map_index] = .GRASS;
                 }
             }
         }
@@ -136,6 +150,14 @@ pub fn main() !void {
         rl.DrawText(&buf_grid_y, 30, 45, 22, rl.BEIGE);
 
         rl.DrawText(&buf_mouse_map_idx, 10, 70, 22, rl.YELLOW);
+
+   
+
+        rl.DrawText(rl.TextFormat("%f", isometric.c_cell_x), 160, 120 + 60, 22, rl.RED);
+        rl.DrawText(rl.TextFormat("%f", isometric.c_cell_y), 160, 140 + 60, 22, rl.RED);
+        rl.DrawText(rl.TextFormat("%f", isometric.ort_x_f), 160, 120 + 100, 22, rl.GREEN);
+        rl.DrawText(rl.TextFormat("%f", isometric.ort_y_f), 160, 140 + 100, 22, rl.GREEN);
+
 
         rl.EndDrawing();
     }
