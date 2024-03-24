@@ -153,10 +153,10 @@ pub fn main() !void {
 
    
 
-        rl.DrawText(rl.TextFormat("%f", isometric.c_cell_x), 160, 120 + 60, 22, rl.RED);
-        rl.DrawText(rl.TextFormat("%f", isometric.c_cell_y), 160, 140 + 60, 22, rl.RED);
-        rl.DrawText(rl.TextFormat("%f", isometric.ort_x_f), 160, 120 + 100, 22, rl.GREEN);
-        rl.DrawText(rl.TextFormat("%f", isometric.ort_y_f), 160, 140 + 100, 22, rl.GREEN);
+        // rl.DrawText(rl.TextFormat("%f", isometric.c_cell_x), 160, 120 + 60, 22, rl.RED);
+        // rl.DrawText(rl.TextFormat("%f", isometric.c_cell_y), 160, 140 + 60, 22, rl.RED);
+        // rl.DrawText(rl.TextFormat("%f", isometric.ort_x_f), 160, 120 + 100, 22, rl.GREEN);
+        // rl.DrawText(rl.TextFormat("%f", isometric.ort_y_f), 160, 140 + 100, 22, rl.GREEN);
 
 
         rl.EndDrawing();
