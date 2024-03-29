@@ -16,7 +16,6 @@ const inc_y = isometric.orthToIsoWrapIncrementY(TILE_SIZE_Y);
 pub const TILE_SIZE_X: f32 = 129;
 pub const TILE_SIZE_Y: f32 = 65;
 
-
 const MAP_WIDTH: usize = 3;
 const MAP_HEIGT: usize = 4;
 
@@ -30,7 +29,6 @@ const Tile = enum {
 };
 
 var matrix = [MAP_WIDTH * MAP_HEIGT]Tile{ .GRASS, .GRASS, .GRASS, .NONE, .GRASS, .NONE, .GRASS, .GRASS, .GRASS, .GRASS, .GRASS, .NONE };
-
 
 pub fn main() !void {
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Knights and Conveyor Belts");
@@ -91,24 +89,23 @@ pub fn main() !void {
         var buf_grid_x = [_]u8{0} ** 16;
         var buf_grid_y = [_]u8{0} ** 16;
 
-        
+        const mouse_x_map_adj: i32 = mouse_x - map_position_x;
+        const mouse_y_map_adj: i32 = mouse_y - map_position_y;
 
-        const mouse_x_map_adj:i32 = mouse_x - map_position_x;
-        const mouse_y_map_adj:i32 = mouse_y - map_position_y;
+        const orth_coords = iso_matrix.isoToOrth(mouse_x_map_adj, mouse_y_map_adj);
 
-        const grid_x = iso_matrix.isoToOrtX(mouse_x_map_adj, mouse_y_map_adj);
-        const grid_y = iso_matrix.isoToOrtY(mouse_x_map_adj, mouse_y_map_adj);
-        
+        // const grid_x = iso_matrix.isoToOrtX(mouse_x_map_adj, mouse_y_map_adj);
+        // const grid_y = iso_matrix.isoToOrtY(mouse_x_map_adj, mouse_y_map_adj);
 
-        if (grid_x != null and grid_y != null) {
-            const map_index = util.indexTwoDimArray(grid_x.?, grid_y.?, MAP_WIDTH);
+        if (orth_coords) |coords| {
+            const map_index = util.indexTwoDimArray(coords.orth_x, coords.orth_y, MAP_WIDTH);
             if (map_index < MAP_WIDTH * MAP_HEIGT) {
                 // print_mouse_map_idx = true;
                 util.usizeToString(map_index, &buf_mouse_map_idx);
-                util.usizeToString(grid_x.?, &buf_grid_x);
-                util.usizeToString(grid_y.?, &buf_grid_y);
+                util.usizeToString(coords.orth_x, &buf_grid_x);
+                util.usizeToString(coords.orth_y, &buf_grid_y);
                 if (mouse_on_screen and rl.IsMouseButtonPressed(rl.MOUSE_BUTTON_LEFT)) {
-                    matrix[map_index] = switch(matrix[map_index]){
+                    matrix[map_index] = switch (matrix[map_index]) {
                         .GRASS => .NONE,
                         .NONE => .GRASS,
                         else => .GRASS,
@@ -133,13 +130,15 @@ pub fn main() !void {
                     else => grass_sprite,
                 };
 
-                var trans_x = iso_matrix.ortToIsoX(x, y);
-                var trans_y = iso_matrix.ortToIsoY(x, y);
+                const f_map_position_x: f32 = @floatFromInt(map_position_x);
+                const f_map_position_y: f32 = @floatFromInt(map_position_y);
 
-                trans_x += @floatFromInt(map_position_x);
-                trans_y += @floatFromInt(map_position_y);
+                var trans_coords = iso_matrix.orthToIso(x, y);
 
-                rl.DrawTextureEx(spr, rl.Vector2{ .x = trans_x, .y = trans_y }, 0, 1, rl.WHITE);
+                trans_coords.iso_x += f_map_position_x;
+                trans_coords.iso_y += f_map_position_y;
+
+                rl.DrawTextureEx(spr, rl.Vector2{ .x = trans_coords.iso_x, .y = trans_coords.iso_y }, 0, 1, rl.WHITE);
             }
         }
 
@@ -151,13 +150,10 @@ pub fn main() !void {
 
         rl.DrawText(&buf_mouse_map_idx, 10, 70, 22, rl.YELLOW);
 
-   
-
         // rl.DrawText(rl.TextFormat("%f", isometric.c_cell_x), 160, 120 + 60, 22, rl.RED);
         // rl.DrawText(rl.TextFormat("%f", isometric.c_cell_y), 160, 140 + 60, 22, rl.RED);
         // rl.DrawText(rl.TextFormat("%f", isometric.ort_x_f), 160, 120 + 100, 22, rl.GREEN);
         // rl.DrawText(rl.TextFormat("%f", isometric.ort_y_f), 160, 140 + 100, 22, rl.GREEN);
-
 
         rl.EndDrawing();
     }
