@@ -8,17 +8,23 @@ const Error = error{
 };
 
 pub const Map = struct {
-    map_position_x: i32 = 0,
-    map_position_y: i32 = 0,
+    map_position_x: i32,
+    map_position_y: i32,
     map_tiles_width: usize,
     map_tiles_height: usize,
     tile_map: []Tile,
     iso: Iso,
 
-    pub fn new(map_tiles_width: usize, map_tiles_height: usize, tile_pix_width: f32, tile_pix_height: f32) !@This() {
+    pub fn new(map_tiles_width: usize, map_tiles_height: usize, tile_pix_width: f32, tile_pix_height: f32, window_pix_width:f32, window_pix_height:f32) !@This() {
         const this_tile_map = try std.heap.page_allocator.alloc(Tile, map_tiles_width * map_tiles_height);
         const this_iso = Iso.new(tile_pix_width, tile_pix_height);
+
+        const map_start_position_y = window_pix_height / 2 - (@as(f32, @floatFromInt(map_tiles_height)) * tile_pix_height) / 2; 
+        const map_start_position_x = window_pix_width / 2 - tile_pix_width / 2;
+        
         const map = @This(){
+            .map_position_x = @intFromFloat(map_start_position_x),
+            .map_position_y = @intFromFloat(map_start_position_y),
             .map_tiles_width = map_tiles_width,
             .map_tiles_height = map_tiles_height,
             .tile_map = this_tile_map,
