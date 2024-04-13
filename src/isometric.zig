@@ -148,10 +148,14 @@ pub const Iso = struct {
 
         const tile_position = tilePosition(iso_x_map, iso_y_map, this.tile_pix_width, this.tile_pix_height).?;
         const orth_x = isoToOrthX(tile_position.tile_x, tile_position.tile_y, this.wrap_increment_x, this.wrap_increment_y);
-        const orth_y = isoToOrthY(tile_position.tile_x, tile_position.tile_y, this.wrap_increment_x, this.wrap_increment_y);
+        const orth_y = isoToOrthYLean( tile_position.tile_y, this.wrap_increment_y, orth_x);
         if (orth_x < 0 or orth_y < 0) return null;
         return .{.orth_x = @intFromFloat(orth_x), .orth_y = @intFromFloat(orth_y)};
     }
+
+    // pub fn isoSquareToGrid(x1:i32, y1:i32, x2:i32, y2:i32, grid_buf:[]bool)void{
+        
+    // }
 };
 
 const expect = @import("std").testing.expect;

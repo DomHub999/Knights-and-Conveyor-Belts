@@ -15,6 +15,9 @@ pub const Map = struct {
     tile_map: []Tile,
     iso: Iso,
 
+    //debugging
+    
+
     pub fn new(map_tiles_width: usize, map_tiles_height: usize, tile_pix_width: f32, tile_pix_height: f32, window_pix_width:f32, window_pix_height:f32) !@This() {
         const this_tile_map = try std.heap.page_allocator.alloc(Tile, map_tiles_width * map_tiles_height);
         const this_iso = Iso.new(tile_pix_width, tile_pix_height);

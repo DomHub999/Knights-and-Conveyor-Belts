@@ -1,11 +1,11 @@
-const Drawer = @import("raylib_drawer.zig").Drawer;
+const Drawer = @import("raylib_layer.zig").Drawer;
 const Map = @import("map.zig").Map;
 const Ground = @import("tile.zig").Ground;
 const resources = @import("resources.zig");
 const util = @import("utility.zig");
 
-const MAP_TILE_WIDTH: usize = 10 * 5;
-const MAP_TILE_HEIGHT: usize = 10 * 5;
+const MAP_TILE_WIDTH: usize = 10 * 1;
+const MAP_TILE_HEIGHT: usize = 10 * 1;
 
 const WINDOW_PIX_WIDTH: i32 = 800;
 const WINDOW_PIX_HEIGHT: i32 = 600;
