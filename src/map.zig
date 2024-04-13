@@ -15,16 +15,21 @@ pub const Map = struct {
     tile_map: []Tile,
     iso: Iso,
 
-    //debugging
-    
-
-    pub fn new(map_tiles_width: usize, map_tiles_height: usize, tile_pix_width: f32, tile_pix_height: f32, window_pix_width:f32, window_pix_height:f32) !@This() {
+    pub fn new(
+        map_tiles_width: usize,
+        map_tiles_height: usize,
+        tile_pix_width: f32,
+        tile_pix_height: f32,
+        diamond_pix_height: f32,
+        window_pix_width: f32,
+        window_pix_height: f32,
+    ) !@This() {
         const this_tile_map = try std.heap.page_allocator.alloc(Tile, map_tiles_width * map_tiles_height);
-        const this_iso = Iso.new(tile_pix_width, tile_pix_height);
+        const this_iso = Iso.new(tile_pix_width, tile_pix_height, diamond_pix_height, map_tiles_width, map_tiles_height);
 
-        const map_start_position_y = window_pix_height / 2 - (@as(f32, @floatFromInt(map_tiles_height)) * tile_pix_height) / 2; 
+        const map_start_position_y = window_pix_height / 2 - (@as(f32, @floatFromInt(map_tiles_height)) * tile_pix_height) / 2;
         const map_start_position_x = window_pix_width / 2 - tile_pix_width / 2;
-        
+
         const map = @This(){
             .map_position_x = @intFromFloat(map_start_position_x),
             .map_position_y = @intFromFloat(map_start_position_y),

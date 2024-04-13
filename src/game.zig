@@ -19,6 +19,7 @@ pub fn runGame() !void {
         MAP_TILE_HEIGHT,
         TILE_PIX_WIDTH,
         TILE_PIX_HEIGHT,
+        TILE_PIX_HEIGHT,
         WINDOW_PIX_WIDTH,
         WINDOW_PIX_HEIGHT,
     );
