@@ -138,7 +138,6 @@ fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: 
     const orth_x = map_tiles_width - 1;
     const orth_y = map_tiles_height - 1;
 
-
     const top_x = orthToIsoX(0, 0, wrap_increment_x) + tile_pix_width / 2;
     const top_y = orthToIsoY(0, 0, wrap_increment_y);
 
@@ -159,9 +158,98 @@ fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: 
     };
 }
 
+const LinearEquation = struct{m:f32,x:f32,b:f32 };
+const SideEquations = struct{
+    upper_right:LinearEquation,
+    bottom_right:LinearEquation,
+    bottom_left:LinearEquation,
+    upper_left:LinearEquation,
+};
+fn slope(x1:f32,y1:f32, x2:f32, y2:f32)f32{
+    return (y2 - y1) / (x2 - x1);
+}
+
+fn yIntercept(m:f32, x:f32, y:f32)f32{
+    return -m * x + y;
+}
+
+fn mapSideEquations(map_dimensions:*MapDimensions)SideEquations{
+
+    var side_equations:SideEquations = undefined;
+
+    side_equations.upper_right.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
+    side_equations.upper_right.x = map_dimensions.top.x;
+    side_equations.upper_right.b = yIntercept(side_equations.upper_right.m, side_equations.upper_right.x, map_dimensions.top.y);
+
+    side_equations.bottom_right.m = slope(map_dimensions.right.x, map_dimensions.right.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
+    side_equations.bottom_right.x = map_dimensions.right.x;
+    side_equations.bottom_right.b = yIntercept(side_equations.bottom_right.m, side_equations.bottom_right.x, map_dimensions.right.y);
+
+    side_equations.bottom_left.m = slope(map_dimensions.left.x, map_dimensions.left.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
+    side_equations.bottom_left.x = map_dimensions.left.x;
+    side_equations.bottom_left.b = yIntercept(side_equations.bottom_left.m, side_equations.bottom_left.x, map_dimensions.left.y);
+
+    side_equations.upper_left.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.left.x, map_dimensions.left.y);
+    side_equations.upper_left.x = map_dimensions.top.x;
+    side_equations.upper_left.b = yIntercept(side_equations.upper_left.m, side_equations.upper_left.x, map_dimensions.top.y);
+
+    return side_equations;
+}
+
+const MapBoundries = struct{
+    upper_right_x:f32,
+    upper_right_y:f32,
+
+    bottom_right_x:f32,
+    bottom_right_y:f32,
+
+    bottom_left_x:f32,
+    bottom_left_y:f32,
+
+    upper_left_x:f32,
+    upper_left_y:f32,
+};
+
+fn findLinearX(m:f32, y:f32, b:f32)f32{return (y - b) / m; }
+fn findLinearY(m:f32, x:f32, b:f32)f32{return m * x + b; }
+fn mapBoundries(x:f32, y:f32, map_side_equations:*mapSideEquations)MapBoundries{
+    const map_boundries:MapBoundries = undefined;
+    _ = x;
+    _ = y;
+
+
+    
+
+    // map_boundries.upper_right_y = findLinearY();
+    // map_boundries.upper_right_x = findLinearX(m: f32, y: f32, b: f32)
+
+    // map_boundries.bottom_right_x = findLinearX(m: f32, y: f32, b: f32)
+    // map_boundries.bottom_right_y = findLinearY(m: f32, y: f32, b: f32)
+
+    // map_boundries.bottom_left_x = findLinearX(m: f32, y: f32, b: f32)
+    // map_boundries.bottom_left_y = findLinearY(m: f32, y: f32, b: f32)
+
+    // map_boundries.upper_right_x = findLinearX(m: f32, y: f32, b: f32)
+    // map_boundries.upper_left_y = findLinearY(m: f32, y: f32, b: f32)
+    
+    return map_boundries;
+
+}
+
+
+
+// fn isPointOnMap(x:f32, y:f32, map_side_equations:*mapSideEquations)bool{
+
+//     var result = true;
+
+    
+    
+
+//     return result;
+// }
+
 pub const Iso = struct {
     tile_pix_width: f32,
-    tile_pix_height: f32,
     diamond_pix_height: f32,
 
     wrap_increment_x: f32,
@@ -170,23 +258,20 @@ pub const Iso = struct {
     map_tiles_width: usize,
     map_tiles_height: usize,
 
-    map_dimensions: MapDimensions,
+    map_side_equations:mapSideEquations,
 
-    pub fn new(
-        tile_pix_width: f32,
-        tile_pix_height: f32,
-        diamond_pix_height: f32,
-        map_tiles_width: usize,
-        map_tiles_height: usize,
-    ) @This() {
+    pub fn new(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: usize, map_tiles_height: usize) @This() {
         var this: @This() = undefined;
         this.tile_pix_width = tile_pix_width;
-        this.tile_pix_height = tile_pix_height;
         this.diamond_pix_height = diamond_pix_height;
         this.wrap_increment_x = orthToIsoWrapIncrementX(tile_pix_width);
         this.wrap_increment_y = orthToIsoWrapIncrementY(diamond_pix_height);
         this.map_tiles_height = map_tiles_height;
         this.map_tiles_width = map_tiles_width;
+
+        const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, this.wrap_increment_x, this.wrap_increment_y);
+        this.map_side_equations = mapSideEquations(&map_dimensions);
+
         return this;
     }
 
@@ -290,11 +375,11 @@ test "tile position" {
     try expect(tile_position_bottom_right.tile_y == iso_y);
 }
 
-test "map dimensions"{
-    const tile_pix_width:f32 = 8;
-    const diamond_pix_height:f32 = 4;
-    const map_tiles_width:f32 = 3;
-    const map_tiles_height:f32 = 2;
+test "map dimensions" {
+    const tile_pix_width: f32 = 8;
+    const diamond_pix_height: f32 = 4;
+    const map_tiles_width: f32 = 3;
+    const map_tiles_height: f32 = 2;
 
     const wrap_increment_x = orthToIsoWrapIncrementX(tile_pix_width);
     const wrap_increment_y = orthToIsoWrapIncrementY(diamond_pix_height);
@@ -312,5 +397,22 @@ test "map dimensions"{
 
     try expect(map_dimensions.left.x == -4);
     try expect(map_dimensions.left.y == 4);
+}
 
+test "slope"{
+    const result = slope(-5, 13, 3, -3);
+    try expect(result == -2);
+}
+
+test "y intercept"{
+    const result = yIntercept(-2, 3, -3);
+    try expect(result == 3);
+}
+
+test "find linear x and y"{
+    const resultX = findLinearX(-2, -3, 3);
+    const resultY = findLinearY(-2, 3, 3);
+
+    try expect(resultX == 3);
+    try expect(resultY == -3);
 }

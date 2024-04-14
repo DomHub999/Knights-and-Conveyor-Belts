@@ -14,15 +14,9 @@ const TILE_PIX_WIDTH: f32 = 64;
 const TILE_PIX_HEIGHT: f32 = 32;
 
 pub fn runGame() !void {
-    var map = try Map.new(
-        MAP_TILE_WIDTH,
-        MAP_TILE_HEIGHT,
-        TILE_PIX_WIDTH,
-        TILE_PIX_HEIGHT,
-        TILE_PIX_HEIGHT,
-        WINDOW_PIX_WIDTH,
-        WINDOW_PIX_HEIGHT,
-    );
+    
+    var map = try Map.new(MAP_TILE_WIDTH, MAP_TILE_HEIGHT, TILE_PIX_WIDTH, TILE_PIX_HEIGHT, WINDOW_PIX_HEIGHT, WINDOW_PIX_WIDTH);
+
     defer map.deinit();
 
     try map.initGround(&ground_tiles);
