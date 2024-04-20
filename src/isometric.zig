@@ -178,16 +178,16 @@ fn mapSideEquations(map_dimensions:*const MapDimensions)SideEquations{
     var side_equations:SideEquations = undefined;
 
     side_equations.upper_right.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
-    side_equations.upper_right.b = yIntercept(side_equations.upper_right.m, side_equations.upper_right.x, map_dimensions.top.y);
+    side_equations.upper_right.b = yIntercept(side_equations.upper_right.m, map_dimensions.top.x, map_dimensions.top.y);
 
     side_equations.bottom_right.m = slope(map_dimensions.right.x, map_dimensions.right.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
-    side_equations.bottom_right.b = yIntercept(side_equations.bottom_right.m, side_equations.bottom_right.x, map_dimensions.right.y);
+    side_equations.bottom_right.b = yIntercept(side_equations.bottom_right.m, map_dimensions.right.x, map_dimensions.right.y);
 
     side_equations.bottom_left.m = slope(map_dimensions.left.x, map_dimensions.left.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
-    side_equations.bottom_left.b = yIntercept(side_equations.bottom_left.m, side_equations.bottom_left.x, map_dimensions.left.y);
+    side_equations.bottom_left.b = yIntercept(side_equations.bottom_left.m, map_dimensions.left.x, map_dimensions.left.y);
 
     side_equations.upper_left.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.left.x, map_dimensions.left.y);
-    side_equations.upper_left.b = yIntercept(side_equations.upper_left.m, side_equations.upper_left.x, map_dimensions.top.y);
+    side_equations.upper_left.b = yIntercept(side_equations.upper_left.m, map_dimensions.top.x, map_dimensions.top.y);
 
     return side_equations;
 }
@@ -208,13 +208,13 @@ const MapBoundries = struct{
 
 fn findLinearX(m:f32, y:f32, b:f32)f32{return (y - b) / m; }
 fn findLinearY(m:f32, x:f32, b:f32)f32{return m * x + b; }
-fn mapBoundries(x:f32, y:f32, map_side_equations:*SideEquations)MapBoundries{
+fn mapBoundries(x:f32, y:f32, map_side_equations:*const SideEquations)MapBoundries{
 
-    const map_boundries:MapBoundries = undefined;
+    var map_boundries:MapBoundries = undefined;
     const mse = map_side_equations;
 
-    map_boundries.upper_right_y = findLinearX(mse.upper_right.m , y, mse.upper_right.b);
-    map_boundries.upper_right_x = findLinearY(mse.bottom_right.m, x, mse.upper_right.b);
+    map_boundries.upper_right_x = findLinearX(mse.upper_right.m , y, mse.upper_right.b);
+    map_boundries.upper_right_y = findLinearY(mse.upper_right.m, x, mse.upper_right.b);
 
     map_boundries.bottom_right_x = findLinearX(mse.bottom_right.m, y, mse.bottom_right.b);
     map_boundries.bottom_right_y = findLinearY(mse.bottom_right.m, x, mse.bottom_right.b);
@@ -228,7 +228,7 @@ fn mapBoundries(x:f32, y:f32, map_side_equations:*SideEquations)MapBoundries{
     return map_boundries;
 }
 
-fn isPointOnMap(x:f32, y:f32, map_side_equations:*mapSideEquations)bool{
+fn isPointOnMap(x:f32, y:f32, map_side_equations:*const SideEquations)bool{
 
     const map_boundries = mapBoundries(x, y, map_side_equations);
     
@@ -407,4 +407,48 @@ test "find linear x and y"{
 
     try expect(resultX == 3);
     try expect(resultY == -3);
+}
+
+test "is point on map"{
+
+    const tile_pix_width:f32 = 8;
+    const diamond_pix_height:f32 = 4;
+    const map_tiles_width:f32 = 3;
+    const map_tiles_height:f32 = 2;
+
+    const wrap_increment_x = orthToIsoWrapIncrementX(tile_pix_width);
+    const wrap_increment_y = orthToIsoWrapIncrementY(diamond_pix_height);
+
+    const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, wrap_increment_x, wrap_increment_y);
+    const side_equations = mapSideEquations(&map_dimensions);
+    
+    const point_on_map_1 = Vec2{.x = 4, .y = 0};
+    const point_on_map_2 = Vec2{.x = 4, .y = 7};
+    const point_on_map_3 = Vec2{.x = 9, .y = 7};
+    const point_on_map_4 = Vec2{.x = -3, .y = 4};
+
+    const point_not_on_map_1 = Vec2{.x = 5, .y = 0};
+    const point_not_on_map_2 = Vec2{.x = 4, .y = 9};
+    const point_not_on_map_3 = Vec2{.x = 16, .y = 7};
+    const point_not_on_map_4 = Vec2{.x = -5, .y = 4};
+
+    const is_on_map_1 = isPointOnMap(point_on_map_1.x, point_on_map_1.y, &side_equations);
+    const is_on_map_2 = isPointOnMap(point_on_map_2.x, point_on_map_2.y, &side_equations);
+    const is_on_map_3 = isPointOnMap(point_on_map_3.x, point_on_map_3.y, &side_equations);
+    const is_on_map_4 = isPointOnMap(point_on_map_4.x, point_on_map_4.y, &side_equations);
+    
+    const is_not_on_map_1 = isPointOnMap(point_not_on_map_1.x, point_not_on_map_1.y, &side_equations);
+    const is_not_on_map_2 = isPointOnMap(point_not_on_map_2.x, point_not_on_map_2.y, &side_equations);
+    const is_not_on_map_3 = isPointOnMap(point_not_on_map_3.x, point_not_on_map_3.y, &side_equations);
+    const is_not_on_map_4 = isPointOnMap(point_not_on_map_4.x, point_not_on_map_4.y, &side_equations);
+
+    try expect(is_on_map_1 == true);
+    try expect(is_on_map_2 == true);
+    try expect(is_on_map_3 == true);
+    try expect(is_on_map_4 == true);
+
+    try expect(is_not_on_map_1 == false);
+    try expect(is_not_on_map_2 == false);
+    try expect(is_not_on_map_3 == false);
+    try expect(is_not_on_map_4 == false);
 }
