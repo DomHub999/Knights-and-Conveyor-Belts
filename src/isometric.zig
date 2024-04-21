@@ -1,3 +1,8 @@
+const std = @import("std");
+
+const Vec2f = struct { x: f32, y: f32 };
+const Vec2i = struct { x: i32, y: i32 };
+
 fn orthToIsoWrapIncrementX(tile_pix_width: f32) f32 {
     return tile_pix_width / 2;
 }
@@ -132,8 +137,7 @@ fn tilePosition(
     return null;
 }
 
-const Vec2 = struct { x: f32, y: f32 };
-const MapDimensions = struct { top: Vec2, right: Vec2, bottom: Vec2, left: Vec2 };
+const MapDimensions = struct { top: Vec2f, right: Vec2f, bottom: Vec2f, left: Vec2f };
 fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: f32, map_tiles_height: f32, wrap_increment_x: f32, wrap_increment_y: f32) MapDimensions {
     const orth_x = map_tiles_width - 1;
     const orth_y = map_tiles_height - 1;
@@ -151,10 +155,10 @@ fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: 
     const left_y = orthToIsoY(0, orth_y, wrap_increment_y) + diamond_pix_height / 2;
 
     return MapDimensions{
-        .top = Vec2{ .x = top_x, .y = top_y },
-        .right = Vec2{ .x = right_x, .y = right_y },
-        .bottom = Vec2{ .x = bottom_x, .y = bottom_y },
-        .left = Vec2{ .x = left_x, .y = left_y },
+        .top = Vec2f{ .x = top_x, .y = top_y },
+        .right = Vec2f{ .x = right_x, .y = right_y },
+        .bottom = Vec2f{ .x = bottom_x, .y = bottom_y },
+        .left = Vec2f{ .x = left_x, .y = left_y },
     };
 }
 
@@ -231,40 +235,89 @@ fn mapBoundries(x: f32, y: f32, map_side_equations: *const SideEquations) MapBou
 }
 
 const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
-const BoundryPosition = struct { position: Vec2, boundry_violation: Boundry };
+const BoundryPosition = struct { position: Vec2f, boundry_violation: Boundry };
 const IsOnMap = union(enum) { yes: void, no: BoundryPosition };
 fn isPointOnMap(x: f32, y: f32, map_side_equations: *const SideEquations) IsOnMap {
     const map_boundries = mapBoundries(x, y, map_side_equations);
 
-    if (x > map_boundries.upper_right_x and y < map_boundries.upper_right_y){
-        return IsOnMap{.no = .{.position = .{.x = map_boundries.upper_right_x,.y = map_boundries.upper_right_y},.boundry_violation = .upper_right}};
-    } 
-    if (x > map_boundries.bottom_right_x and y > map_boundries.bottom_right_y){
-        return IsOnMap{.no = .{.position = .{.x = map_boundries.bottom_right_x,.y = map_boundries.bottom_right_y},.boundry_violation = .bottom_right}};
+    if (x > map_boundries.upper_right_x and y < map_boundries.upper_right_y) {
+        return IsOnMap{ .no = .{ .position = .{ .x = map_boundries.upper_right_x, .y = map_boundries.upper_right_y }, .boundry_violation = .upper_right } };
     }
-    if (x < map_boundries.bottom_left_x and y > map_boundries.bottom_left_y){
-        return IsOnMap{.no = .{.position = .{.x = map_boundries.bottom_left_x, .y = map_boundries.bottom_left_y},.boundry_violation = .bottom_left}};
+    if (x > map_boundries.bottom_right_x and y > map_boundries.bottom_right_y) {
+        return IsOnMap{ .no = .{ .position = .{ .x = map_boundries.bottom_right_x, .y = map_boundries.bottom_right_y }, .boundry_violation = .bottom_right } };
     }
-    if (x < map_boundries.upper_left_x and y < map_boundries.upper_left_y){
-        return IsOnMap{.no = .{.position = .{.x = map_boundries.upper_left_x, .y = map_boundries.upper_left_y}, .boundry_violation = .upper_left}};
+    if (x < map_boundries.bottom_left_x and y > map_boundries.bottom_left_y) {
+        return IsOnMap{ .no = .{ .position = .{ .x = map_boundries.bottom_left_x, .y = map_boundries.bottom_left_y }, .boundry_violation = .bottom_left } };
+    }
+    if (x < map_boundries.upper_left_x and y < map_boundries.upper_left_y) {
+        return IsOnMap{ .no = .{ .position = .{ .x = map_boundries.upper_left_x, .y = map_boundries.upper_left_y }, .boundry_violation = .upper_left } };
     }
 
     return IsOnMap.yes;
 }
 
-const Rectangle = struct{upper_left:Vec2, upper_right:Vec2, bottom_right:Vec2, bottom_left:Vec2};
-const Line = struct{from:Vec2, to:Vec2};
-const Area = union(enum){
-    rectangle:Rectangle,
-    line:Line,
-};
-fn rectangleEdges(x1: i32, y1: i32, x2: i32, y2: i32)Area{
-    if (x1 == x2 or y1 == y2) return Area{.line = .{.from = .{.x = x1, .y = y1}, .to = .{.x = x2, .y = y2}}};
-    // if (x2 > x1 and ) {
+const Rectangle = struct { upper_left: Vec2f, upper_right: Vec2f, bottom_right: Vec2f, bottom_left: Vec2f };
+fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
+    if (x1 < x2 and y1 < y2) { //top left to bottom right
+        return Rectangle{
+            .upper_left = .{ .x = x1, .y = y1 },
+            .upper_right = .{ .x = x2, .y = y1 },
+            .bottom_right = .{ .x = x2, .y = y2 },
+            .bottom_left = .{ .x = x1, .y = y2 },
+        };
+    } else if (x1 > x2 and y1 > y2) { //bottom right to top left
+        return Rectangle{
+            .upper_left = .{ .x = x2, .y = y2 },
+            .upper_right = .{ .x = x1, .y = y2 },
+            .bottom_right = .{ .x = x1, .y = y1 },
+            .bottom_left = .{ .x = x2, .y = y1 },
+        };
+    } else if (x1 < x2 and y1 > y2) { //bottom left to top right
+        return Rectangle{
+            .upper_left = .{ .x = x1, .y = y2 },
+            .upper_right = .{ .x = x2, .y = y2 },
+            .bottom_right = .{ .x = x2, .y = y1 },
+            .bottom_left = .{ .x = x1, .y = y1 },
+        };
+    } else if (x1 > x2 and y1 < y2) { // top right to bottom left
+        return Rectangle{
+            .upper_left = .{ .x = x2, .y = y1 },
+            .upper_right = .{ .x = x1, .y = y1 },
+            .bottom_right = .{ .x = x1, .y = y2 },
+            .bottom_left = .{ .x = x2, .y = y2 },
+        };
+    }
 
-    // } else {
+    return null;
+}
 
-    // }
+fn gridFromRec(x1: f32, y1: f32, x2: f32, y2: f32, grid_buf: []bool, tile_pix_width: f32, diamond_pix_height: f32, map_side_equations:*const SideEquations) void {
+    const rectangle = rectangleEdges(x1, y1, x2, y2).?;
+
+    var cursor_y = rectangle.upper_left.y;
+
+    while (cursor_y < rectangle.bottom_right.y) : (cursor_y += diamond_pix_height) {
+        
+        var cursor_x = rectangle.upper_left.x;
+
+        var is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations);
+
+        switch (is_point_on_map) {
+            .yes => {},
+            .no => |p| {
+                switch (p.boundry_violation) {
+                    .upper_right,.bottom_right => {continue;}, //we are passt the right side boundries
+                    .upper_left,.bottom_left => {cursor_x = p.position.x;} //move the cursor to to the left boundry and continue from there
+                }
+            },
+        }
+
+        while (cursor_x < rectangle.upper_right.x) : (cursor_x += tile_pix_width) {
+
+            is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations); //if not, break to outer
+
+        }
+    }
 }
 
 pub const Iso = struct {
@@ -314,8 +367,8 @@ pub const Iso = struct {
     }
 
     pub fn isoSquareToGrid(x1: i32, y1: i32, x2: i32, y2: i32, grid_buf: []bool) void {
-        const flot_vec_1 = Vec2{ .x = @floatFromInt(x1), .y = @floatFromInt(y1) };
-        const flot_vec_2 = Vec2{ .x = @floatFromInt(x2), .y = @floatFromInt(y2) };
+        const flot_vec_1 = Vec2f{ .x = @floatFromInt(x1), .y = @floatFromInt(y1) };
+        const flot_vec_2 = Vec2f{ .x = @floatFromInt(x2), .y = @floatFromInt(y2) };
         _ = flot_vec_1;
         _ = flot_vec_2;
         _ = grid_buf;
@@ -452,15 +505,15 @@ test "is point on map" {
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, wrap_increment_x, wrap_increment_y);
     const side_equations = mapSideEquations(&map_dimensions);
 
-    const point_on_map_1 = Vec2{ .x = 4, .y = 0 };
-    const point_on_map_2 = Vec2{ .x = 4, .y = 7 };
-    const point_on_map_3 = Vec2{ .x = 9, .y = 7 };
-    const point_on_map_4 = Vec2{ .x = -3, .y = 4 };
+    const point_on_map_1 = Vec2f{ .x = 4, .y = 0 };
+    const point_on_map_2 = Vec2f{ .x = 4, .y = 7 };
+    const point_on_map_3 = Vec2f{ .x = 9, .y = 7 };
+    const point_on_map_4 = Vec2f{ .x = -3, .y = 4 };
 
-    const point_not_on_map_1 = Vec2{ .x = 5, .y = 0 };
-    const point_not_on_map_2 = Vec2{ .x = 4, .y = 9 };
-    const point_not_on_map_3 = Vec2{ .x = 16, .y = 7 };
-    const point_not_on_map_4 = Vec2{ .x = -5, .y = 4 };
+    const point_not_on_map_1 = Vec2f{ .x = 5, .y = 0 };
+    const point_not_on_map_2 = Vec2f{ .x = 4, .y = 9 };
+    const point_not_on_map_3 = Vec2f{ .x = 16, .y = 7 };
+    const point_not_on_map_4 = Vec2f{ .x = -5, .y = 4 };
 
     const is_on_map_1 = isPointOnMap(point_on_map_1.x, point_on_map_1.y, &side_equations);
     const is_on_map_2 = isPointOnMap(point_on_map_2.x, point_on_map_2.y, &side_equations);
@@ -481,4 +534,37 @@ test "is point on map" {
     try expect(is_not_on_map_2 == .no);
     try expect(is_not_on_map_3 == .no);
     try expect(is_not_on_map_4 == .no);
+}
+
+test "area rectangle" {
+    const Points = struct { p1: Vec2f, p2: Vec2f };
+    const test_points = [_]Points{
+        Points{ .p1 = .{ .x = 0, .y = 0 }, .p2 = .{ .x = 1, .y = 1 } },
+        Points{ .p1 = .{ .x = 1, .y = 1 }, .p2 = .{ .x = 0, .y = 0 } },
+        Points{ .p1 = .{ .x = 0, .y = 1 }, .p2 = .{ .x = 1, .y = 0 } },
+        Points{ .p1 = .{ .x = 1, .y = 0 }, .p2 = .{ .x = 0, .y = 1 } },
+    };
+
+    const p_res = Rectangle{
+        .upper_left = .{ .x = 0, .y = 0 },
+        .upper_right = .{ .x = 1, .y = 0 },
+        .bottom_right = .{ .x = 1, .y = 1 },
+        .bottom_left = .{ .x = 0, .y = 1 },
+    };
+
+    for (&test_points) |*p| {
+        const rec = rectangleEdges(p.p1.x, p.p1.y, p.p2.x, p.p2.y).?;
+
+        try expect(rec.upper_left.x == p_res.upper_left.x);
+        try expect(rec.upper_left.y == p_res.upper_left.y);
+
+        try expect(rec.upper_right.x == p_res.upper_right.x);
+        try expect(rec.upper_right.y == p_res.upper_right.y);
+
+        try expect(rec.bottom_right.x == p_res.bottom_right.x);
+        try expect(rec.bottom_right.y == p_res.bottom_right.y);
+
+        try expect(rec.bottom_left.x == p_res.bottom_left.x);
+        try expect(rec.bottom_left.y == p_res.bottom_left.y);
+    }
 }
