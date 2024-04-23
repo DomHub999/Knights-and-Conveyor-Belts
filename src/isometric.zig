@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("utility.zig");
 
 const Vec2f = struct { x: f32, y: f32 };
 const Vec2i = struct { x: i32, y: i32 };
@@ -74,6 +75,8 @@ fn rectangleSideRaising(iso_x: f32, iso_y: f32, rectangle_position_x: f32, recta
     const x = iso_x - (rectangle_position_x + rectangle_pix_width);
     const y = iso_y - rectangle_position_y;
 
+    if (x == 0) return .upper; // in the unlikely event, that a points x position lies on the opposite of the rectangles origin
+
     const iso_slope = y / x;
     const diagonal_slope = rectangle_pix_height / -rectangle_pix_width;
 
@@ -89,6 +92,8 @@ fn rectangleSideRaising(iso_x: f32, iso_y: f32, rectangle_position_x: f32, recta
 fn rectangleSideFalling(iso_x: f32, iso_y: f32, rectangle_position_x: f32, rectangle_position_y: f32, rectangle_pix_width: f32, rectangle_pix_height: f32) ?RectangleSide {
     const x = iso_x - rectangle_position_x;
     const y = iso_y - rectangle_position_y;
+
+    if (x == 0) return .upper; //the unlikely event, that a point lies on the rectangles origin
 
     const iso_slope = y / x;
     const diagonal_slope = rectangle_pix_height / rectangle_pix_width;
@@ -291,13 +296,25 @@ fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     return null;
 }
 
-fn gridFromRec(x1: f32, y1: f32, x2: f32, y2: f32, grid_buf: []bool, tile_pix_width: f32, diamond_pix_height: f32, map_side_equations:*const SideEquations) void {
+const PROBING_DIVISOR:f32 = 4; //divisor to determine probing length
+fn gridSelFromRec(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    grid_buf: []bool,
+    tile_pix_width: f32,
+    diamond_pix_height: f32,
+    map_side_equations: *const SideEquations,
+    wrap_increment_x: f32,
+    wrap_increment_y: f32,
+    map_tiles_width: usize,
+) void {
     const rectangle = rectangleEdges(x1, y1, x2, y2).?;
 
     var cursor_y = rectangle.upper_left.y;
 
-    while (cursor_y < rectangle.bottom_right.y) : (cursor_y += diamond_pix_height) {
-        
+    while (cursor_y <= rectangle.bottom_right.y) : (cursor_y += diamond_pix_height / PROBING_DIVISOR) {
         var cursor_x = rectangle.upper_left.x;
 
         var is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations);
@@ -306,16 +323,36 @@ fn gridFromRec(x1: f32, y1: f32, x2: f32, y2: f32, grid_buf: []bool, tile_pix_wi
             .yes => {},
             .no => |p| {
                 switch (p.boundry_violation) {
-                    .upper_right,.bottom_right => {continue;}, //we are passt the right side boundries
-                    .upper_left,.bottom_left => {cursor_x = p.position.x;} //move the cursor to to the left boundry and continue from there
+                    .upper_right, .bottom_right => {
+                        continue;
+                    }, //we are passt the right side boundries
+                    .upper_left, .bottom_left => {
+                        // cursor_x = p.position.x;
+                    }, //move the cursor to to the left boundry and continue from there
                 }
             },
         }
 
-        while (cursor_x < rectangle.upper_right.x) : (cursor_x += tile_pix_width) {
+        while (cursor_x <= rectangle.upper_right.x) : (cursor_x += tile_pix_width / PROBING_DIVISOR) {
+            is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations);
 
-            is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations); //if not, break to outer
+            switch (is_point_on_map) {
+                .no => {
+                    continue;
+                    // break;
+                },
+                .yes => {
+                    const tile_position = tilePosition(cursor_x, cursor_y, tile_pix_width, diamond_pix_height).?;
 
+                    const orth_x = isoToOrthX(tile_position.tile_x, tile_position.tile_y, wrap_increment_x, wrap_increment_y);
+                    const orth_y = isoToOrthYLean(tile_position.tile_y, wrap_increment_y, orth_x);
+
+                    if (orth_x < 0 or orth_y < 0) continue;
+
+                    const idx = util.indexTwoDimArray(@intFromFloat(orth_x), @intFromFloat(orth_y), map_tiles_width);
+                    grid_buf[idx] = true;
+                },
+            }
         }
     }
 }
@@ -567,4 +604,48 @@ test "area rectangle" {
         try expect(rec.bottom_left.x == p_res.bottom_left.x);
         try expect(rec.bottom_left.y == p_res.bottom_left.y);
     }
+}
+
+test "select area"{
+
+    const tile_pix_width: f32 = 8;
+    const diamond_pix_height: f32 = 4;
+    const map_tiles_width: f32 = 3;
+    const map_tiles_height: f32 = 2;
+
+    var grid_buf = [_]bool{false}**(@as(usize,@intFromFloat(map_tiles_width))*@as(usize,@intFromFloat(map_tiles_height)));
+
+    const wrap_increment_x = orthToIsoWrapIncrementX(tile_pix_width);
+    const wrap_increment_y = orthToIsoWrapIncrementY(diamond_pix_height);
+
+    const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, wrap_increment_x, wrap_increment_y);
+    const side_equations = mapSideEquations(&map_dimensions);
+
+    var p1 = Vec2f{.x = 4,.y = 2};
+    var p2 = Vec2f{.x = -3,.y = 6};
+
+    gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+
+    try expect(grid_buf[0]);
+    try expect(grid_buf[3]);
+    try expect(grid_buf[4]);
+
+    try expect(!grid_buf[1]);
+    try expect(!grid_buf[2]);
+    try expect(!grid_buf[5]);
+
+    p1 = Vec2f{.x = -3,.y = 1};
+    p2 = Vec2f{.x = 4,.y = 5};
+
+    grid_buf = [_]bool{false}**(@as(usize,@intFromFloat(map_tiles_width))*@as(usize,@intFromFloat(map_tiles_height)));
+    gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+
+    try expect(grid_buf[0]);
+    try expect(grid_buf[3]);
+    try expect(grid_buf[4]);
+
+    try expect(!grid_buf[1]);
+    try expect(!grid_buf[2]);
+    try expect(!grid_buf[5]);
+
 }
