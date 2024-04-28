@@ -296,7 +296,7 @@ fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     return null;
 }
 
-const PROBING_DIVISOR:f32 = 4; //divisor to determine probing length
+const PROBING_DIVISOR: f32 = 4; //divisor to determine probing length
 fn gridSelFromRec(
     x1: f32,
     y1: f32,
@@ -320,17 +320,10 @@ fn gridSelFromRec(
         var is_point_on_map = isPointOnMap(cursor_x, cursor_y, map_side_equations);
 
         switch (is_point_on_map) {
-            .yes => {},
-            .no => |p| {
-                switch (p.boundry_violation) {
-                    .upper_right, .bottom_right => {
-                        continue;
-                    }, //we are passt the right side boundries
-                    .upper_left, .bottom_left => {
-                        // cursor_x = p.position.x;
-                    }, //move the cursor to to the left boundry and continue from there
-                }
+            .no => |pl| {
+                cursor_x = pl.position.x;
             },
+            .yes => {}, //do nothing
         }
 
         while (cursor_x <= rectangle.upper_right.x) : (cursor_x += tile_pix_width / PROBING_DIVISOR) {
@@ -339,7 +332,6 @@ fn gridSelFromRec(
             switch (is_point_on_map) {
                 .no => {
                     continue;
-                    // break;
                 },
                 .yes => {
                     const tile_position = tilePosition(cursor_x, cursor_y, tile_pix_width, diamond_pix_height).?;
@@ -350,12 +342,15 @@ fn gridSelFromRec(
                     if (orth_x < 0 or orth_y < 0) continue;
 
                     const idx = util.indexTwoDimArray(@intFromFloat(orth_x), @intFromFloat(orth_y), map_tiles_width);
+                    if (idx > grid_buf.len or idx < 0) continue;
                     grid_buf[idx] = true;
                 },
             }
         }
     }
 }
+
+
 
 pub const Iso = struct {
     tile_pix_width: f32,
@@ -606,14 +601,13 @@ test "area rectangle" {
     }
 }
 
-test "select area"{
-
+test "select area" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
     const map_tiles_width: f32 = 3;
     const map_tiles_height: f32 = 2;
 
-    var grid_buf = [_]bool{false}**(@as(usize,@intFromFloat(map_tiles_width))*@as(usize,@intFromFloat(map_tiles_height)));
+    var grid_buf = [_]bool{false} ** (@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)));
 
     const wrap_increment_x = orthToIsoWrapIncrementX(tile_pix_width);
     const wrap_increment_y = orthToIsoWrapIncrementY(diamond_pix_height);
@@ -621,31 +615,64 @@ test "select area"{
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, wrap_increment_x, wrap_increment_y);
     const side_equations = mapSideEquations(&map_dimensions);
 
-    var p1 = Vec2f{.x = 4,.y = 2};
-    var p2 = Vec2f{.x = -3,.y = 6};
+    var result_true:[(@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)))]?usize = undefined;
+    var result_false:[(@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)))]?usize = undefined;
 
+
+    var p1 = Vec2f{ .x = 4, .y = 2 };
+    var p2 = Vec2f{ .x = -3, .y = 6 };
     gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+    loadArray(&result_true, &[_]usize{0,3,4});
+    loadArray(&result_false, &[_]usize{1, 2, 5});
+    try checkGrid(&grid_buf, &result_true, &result_false);
 
-    try expect(grid_buf[0]);
-    try expect(grid_buf[3]);
-    try expect(grid_buf[4]);
-
-    try expect(!grid_buf[1]);
-    try expect(!grid_buf[2]);
-    try expect(!grid_buf[5]);
-
-    p1 = Vec2f{.x = -3,.y = 1};
-    p2 = Vec2f{.x = 4,.y = 5};
-
-    grid_buf = [_]bool{false}**(@as(usize,@intFromFloat(map_tiles_width))*@as(usize,@intFromFloat(map_tiles_height)));
+     p1 = Vec2f{ .x = -3, .y = 1 };
+     p2 = Vec2f{ .x = 4, .y = 5 };
+    grid_buf = [_]bool{false} ** (@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)));
     gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+    loadArray(&result_true, &[_]usize{0,3,4});
+    loadArray(&result_false, &[_]usize{1, 2, 5});
+    try checkGrid(&grid_buf, &result_true, &result_false);
 
-    try expect(grid_buf[0]);
-    try expect(grid_buf[3]);
-    try expect(grid_buf[4]);
+    p1 = Vec2f{ .x = 9, .y = 4 };
+    p2 = Vec2f{ .x = 17, .y = 14 };
+    grid_buf = [_]bool{false} ** (@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)));
+    gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+    loadArray(&result_true, &[_]usize{1,2,5});
+    loadArray(&result_false, &[_]usize{0, 3, 4});
+    try checkGrid(&grid_buf, &result_true, &result_false);
 
-    try expect(!grid_buf[1]);
-    try expect(!grid_buf[2]);
-    try expect(!grid_buf[5]);
-
+    // p1 = Vec2f{ .x = 4, .y = 9 };
+    // p2 = Vec2f{ .x = 13, .y = 20 };
+    // grid_buf = [_]bool{false} ** (@as(usize, @intFromFloat(map_tiles_width)) * @as(usize, @intFromFloat(map_tiles_height)));
+    // gridSelFromRec(p1.x, p1.y, p2.x, p2.y, &grid_buf, tile_pix_width, diamond_pix_height, &side_equations, wrap_increment_x, wrap_increment_y, map_tiles_width);
+    // loadArray(&result_true, &[_]usize{5});
+    // loadArray(&result_false, &[_]usize{0,1,2,3,4});
+    // try checkGrid(&grid_buf, &result_true, &result_false);
 }
+
+fn checkGrid(grid_buf: []bool, cells_true: []?usize, cells_false: []?usize) !void {
+    for (cells_true) |cell| {
+        if (cell) |payload| {
+            try expect(grid_buf[payload]);
+        }
+    }
+
+    for (cells_false) |cell| {
+        if (cell) |payload| {
+            try expect(!grid_buf[payload]);
+        }
+    }
+}
+
+fn loadArray(arr: []?usize, load: []const usize) void {
+    
+    for (arr, 0..) |_, i| {
+        arr[i] = null;
+    }
+
+    for (load, 0..) |u, i| {
+        arr[i] = u;
+    }
+}
+
