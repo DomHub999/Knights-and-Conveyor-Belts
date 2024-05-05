@@ -1,7 +1,7 @@
 const std = @import("std");
 const Tile = @import("tile.zig").Tile;
 const Ground = @import("tile.zig").Ground;
-const Iso = @import("isometric.zig").Iso;
+const Iso = @import("isometric/iso_core.zig").Iso;
 
 const Error = error{
     initialize_ground_size_mismatch,
