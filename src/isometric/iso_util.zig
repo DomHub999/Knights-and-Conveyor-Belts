@@ -1,5 +1,6 @@
 const Vec2f = @import("iso_core.zig").Vec2f;
 
+//Given two points, return all points of a rectangle in a consistent order, regardless of the order of the given points
 const Rectangle = struct { upper_left: Vec2f, upper_right: Vec2f, bottom_right: Vec2f, bottom_left: Vec2f };
 fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     if (x1 < x2 and y1 < y2) { //top left to bottom right
@@ -35,6 +36,20 @@ fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     return null;
 }
 
+//Math functins for linear equations
+pub fn slope(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
+    return (y2 - y1) / (x2 - x1);
+}
+pub fn yIntercept(m: f32, x: f32, y: f32) f32 {
+    return -m * x + y;
+}
+pub fn findLinearX(m: f32, y: f32, b: f32) f32 {
+    return (y - b) / m;
+}
+pub fn findLinearY(m: f32, x: f32, b: f32) f32 {
+    return m * x + b;
+}
+
 const expect = @import("std").testing.expect;
 
 test "area rectangle" {
@@ -68,4 +83,22 @@ test "area rectangle" {
         try expect(rec.bottom_left.x == p_res.bottom_left.x);
         try expect(rec.bottom_left.y == p_res.bottom_left.y);
     }
+}
+
+test "slope" {
+    const result = slope(-5, 13, 3, -3);
+    try expect(result == -2);
+}
+
+test "y intercept" {
+    const result = yIntercept(-2, 3, -3);
+    try expect(result == 3);
+}
+
+test "find linear x and y" {
+    const resultX = findLinearX(-2, -3, 3);
+    const resultY = findLinearY(-2, 3, 3);
+
+    try expect(resultX == 3);
+    try expect(resultY == -3);
 }

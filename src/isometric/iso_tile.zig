@@ -13,12 +13,12 @@ pub fn mapCoordToIsoPixIncY(diamond_pix_height: f32) f32 {
 }
 
 //From a coordinate in the map array, calculate the pixel position on the x-axis on the screen in isometric space
-pub fn mapCoordToIsoPixX(map_array_coord_x_requirement: f32, map_array_coord_y_requirement: f32, map_coord_to_iso_inc_x: f32) f32 {
-    return (map_array_coord_x_requirement - map_array_coord_y_requirement) * map_coord_to_iso_inc_x;
+pub fn mapCoordToIsoPixX(map_array_coord_x: f32, map_array_coord_y: f32, map_coord_to_iso_inc_x: f32) f32 {
+    return (map_array_coord_x - map_array_coord_y) * map_coord_to_iso_inc_x;
 }
 //From a coordinate in the map array, calculate the pixel position on the y-axis on the screen in isometric space
-pub fn mapCoordToIsoPixY(map_array_coord_x_requirement: f32, map_array_coord_y_requirement: f32, map_coord_to_iso_inc_y: f32) f32 {
-    return (map_array_coord_y_requirement + map_array_coord_x_requirement) * map_coord_to_iso_inc_y;
+pub fn mapCoordToIsoPixY(map_array_coord_x: f32, map_array_coord_y: f32, map_coord_to_iso_inc_y: f32) f32 {
+    return (map_array_coord_y + map_array_coord_x) * map_coord_to_iso_inc_y;
 }
 
 // Convert the pixel position on the x-axis on the screen in isometric space to a coordinate in the map array.
@@ -31,8 +31,8 @@ pub fn isoPixToMapCoordY(iso_pix_x: f32, iso_pix_y: f32, map_coord_to_iso_inc_x:
     return (iso_pix_x / map_coord_to_iso_inc_x - iso_pix_y / map_coord_to_iso_inc_y) / -2;
 }
 // When the coordinate in the map array has already been calculated, an abbreviated formula can be used to convert the pixel position on the y-axis on the screen in isometric space to a coordinate in the map array.
-pub fn isoPixToMapCoordYLean(iso_pix_y: f32, map_coord_to_iso_inc_y: f32, map_array_coord_x_requirement: f32) f32 {
-    return (iso_pix_y / map_coord_to_iso_inc_y) - map_array_coord_x_requirement;
+pub fn isoPixToMapCoordYLean(iso_pix_y: f32, map_coord_to_iso_inc_y: f32, map_array_coord_x: f32) f32 {
+    return (iso_pix_y / map_coord_to_iso_inc_y) - map_array_coord_x;
 }
 
 // THE SUBSEQUENT FUNCTIONS EMBODY A METHODICAL APPROACH TO PRECISE ISOMETRIC TILE SELECTION,
@@ -194,34 +194,34 @@ test "orth to iso and back ext" {
     const map_coord_to_iso_inc_x = mapCoordToIsoPixIncX(120);
     const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(60);
 
-    const map_array_coord_x_requirement: f32 = 3;
-    const map_array_coord_y_requirement: f32 = 2;
+    const map_array_coord_x: f32 = 3;
+    const map_array_coord_y: f32 = 2;
 
-    const iso_pix_x = mapCoordToIsoPixX(map_array_coord_x_requirement, map_array_coord_y_requirement, map_coord_to_iso_inc_x);
-    const iso_pix_y = mapCoordToIsoPixY(map_array_coord_x_requirement, map_array_coord_y_requirement, map_coord_to_iso_inc_y);
+    const iso_pix_x = mapCoordToIsoPixX(map_array_coord_x, map_array_coord_y, map_coord_to_iso_inc_x);
+    const iso_pix_y = mapCoordToIsoPixY(map_array_coord_x, map_array_coord_y, map_coord_to_iso_inc_y);
 
     const map_array_coord_x_calculated = isoPixToMapCoordX(iso_pix_x, iso_pix_y, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_array_coord_y_calculated = isoPixToMapCoordY(iso_pix_x, iso_pix_y, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
 
-    try expect(map_array_coord_x_requirement == map_array_coord_x_calculated);
-    try expect(map_array_coord_y_requirement == map_array_coord_y_calculated);
+    try expect(map_array_coord_x == map_array_coord_x_calculated);
+    try expect(map_array_coord_y == map_array_coord_y_calculated);
 }
 
 test "orth to iso and back lean" {
     const map_coord_to_iso_inc_x = mapCoordToIsoPixIncX(120);
     const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(60);
 
-    const map_array_coord_x_requirement: f32 = 3;
-    const map_array_coord_y_requirement: f32 = 2;
+    const map_array_coord_x: f32 = 3;
+    const map_array_coord_y: f32 = 2;
 
-    const iso_pix_x = mapCoordToIsoPixX(map_array_coord_x_requirement, map_array_coord_y_requirement, map_coord_to_iso_inc_x);
-    const iso_pix_y = mapCoordToIsoPixY(map_array_coord_x_requirement, map_array_coord_y_requirement, map_coord_to_iso_inc_y);
+    const iso_pix_x = mapCoordToIsoPixX(map_array_coord_x, map_array_coord_y, map_coord_to_iso_inc_x);
+    const iso_pix_y = mapCoordToIsoPixY(map_array_coord_x, map_array_coord_y, map_coord_to_iso_inc_y);
 
     const map_array_coord_x_calculated = isoPixToMapCoordX(iso_pix_x, iso_pix_y, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_array_coord_y_calculated = isoPixToMapCoordYLean(iso_pix_y, map_coord_to_iso_inc_y, map_array_coord_x_calculated);
 
-    try expect(map_array_coord_x_requirement == map_array_coord_x_calculated);
-    try expect(map_array_coord_y_requirement == map_array_coord_y_calculated);
+    try expect(map_array_coord_x == map_array_coord_x_calculated);
+    try expect(map_array_coord_y == map_array_coord_y_calculated);
 }
 
 test "tile position" {
