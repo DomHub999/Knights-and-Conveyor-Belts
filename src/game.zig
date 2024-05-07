@@ -3,20 +3,23 @@ const Map = @import("map.zig").Map;
 const Ground = @import("tile.zig").Ground;
 const resources = @import("resources.zig");
 const util = @import("utility.zig");
+const deal_with_key_pressed = @import("user_input.zig").deal_with_key_pressed;
 
-const MAP_TILE_WIDTH: usize = 10 * 1;
-const MAP_TILE_HEIGHT: usize = 10 * 1;
+const MUL:usize = 5;
+const MAP_TILE_WIDTH: usize = 10 * MUL;
+const MAP_TILE_HEIGHT: usize = 10 * MUL;
 
-const WINDOW_PIX_WIDTH: i32 = 800;
-const WINDOW_PIX_HEIGHT: i32 = 600;
+const WINDOW_PIX_WIDTH: i32 = 800 * 2;
+const WINDOW_PIX_HEIGHT: i32 = 600 * 2;
 
 const TILE_PIX_WIDTH: f32 = 64;
 const TILE_PIX_HEIGHT: f32 = 32;
 
+const MAP_MOVEMENT_SPEED:i32 = 1;
+
 pub fn runGame() !void {
     
-    var map = try Map.new(MAP_TILE_WIDTH, MAP_TILE_HEIGHT, TILE_PIX_WIDTH, TILE_PIX_HEIGHT, WINDOW_PIX_HEIGHT, WINDOW_PIX_WIDTH);
-
+    var map = try Map.new(MAP_TILE_WIDTH, MAP_TILE_HEIGHT, TILE_PIX_WIDTH, TILE_PIX_HEIGHT, WINDOW_PIX_WIDTH, WINDOW_PIX_HEIGHT, MAP_MOVEMENT_SPEED);
     defer map.deinit();
 
     try map.initGround(&ground_tiles);
@@ -30,6 +33,9 @@ pub fn runGame() !void {
     defer drawer.deinit();
 
     while (!drawer.exitCommand()) {
+
+        deal_with_key_pressed(&map);
+
         drawer.initializeScreen();
 
         drawer.drawMap(&map);
