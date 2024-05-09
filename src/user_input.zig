@@ -6,6 +6,8 @@ pub fn deal_with_key_pressed(map: *Map) void {
     map_movement_direction(map);
 }
 
+
+//TODO: abstract action from key
 fn map_movement_direction(map: *Map) void {
     if (Hardware.isKeyPressed(Keyboard.move_map_left)) map.move(Map.MovementDirection.right);
     if (Hardware.isKeyPressed(Keyboard.move_map_right)) map.move(Map.MovementDirection.left);

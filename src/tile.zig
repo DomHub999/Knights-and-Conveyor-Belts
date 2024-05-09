@@ -9,7 +9,7 @@ pub const AboveGroundType = enum(u8){
 
 };
 
-pub const AboveGround = struct{
+pub const Structure = struct{
     above_ground:AboveGroundType,
     tiles_height:usize,
     tiles_width:usize,
@@ -19,7 +19,7 @@ pub const AboveGround = struct{
 
 pub const Tile = struct{
     ground:Ground,
-    above_ground:?AboveGround = null,
+    above_ground:?Structure = null,
 };
 
 
