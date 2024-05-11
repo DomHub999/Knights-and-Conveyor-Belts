@@ -3,6 +3,17 @@ const Tile = @import("tile.zig").Tile;
 const Ground = @import("tile.zig").Ground;
 const Iso = @import("isometric/iso_core.zig").Iso;
 
+const walkMapCoordNorth = @import("isometric/iso_tile_walk.zig").walkMapCoordNorth;
+const walkMapCoordEast = @import("isometric/iso_tile_walk.zig").walkMapCoordEast;
+const walkMapCoordSouth = @import("isometric/iso_tile_walk.zig").walkMapCoordSouth;
+const walkMapCoordWest = @import("isometric/iso_tile_walk.zig").walkMapCoordWest;
+const walkMapCoordFurthestNorth = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestNorth;
+const walkMapCoordFurthestEast = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestEast;
+const walkMapCoordFurthestSouth = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestSouth;
+const walkMapCoordFurthestWest = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestWest;
+const Coord = @import("isometric/iso_core.zig").Coord;
+
+
 const Error = error{
     initialize_ground_size_mismatch,
 };
@@ -26,6 +37,8 @@ pub const Map = struct {
     
     map_pix_center_x: i32,
     map_pix_center_y: i32,
+
+    tile_iterator:TileIterator,
 
     pub fn new(
         map_tiles_width: usize,
@@ -87,7 +100,36 @@ pub const Map = struct {
         }
     }
 
+    pub fn getTileIterator(this:*@This())*TileIterator{
+        this.tile_iterator.refreshTileIterator();
+        return &this.tile_iterator;
+    }
+
     pub fn deinit(this: *@This()) void {
         std.heap.page_allocator.free(this.tile_map);
     }
+};
+
+const TileIterator = struct{
+
+    uperLeft:Coord,
+    upperRight:Coord,
+    bottomRight:Coord,
+    bottomLeft:Coord,
+    margin:usize, //additional tiles to be considered out of bounds
+
+    pub fn refresh(this:*@This())void{
+
+    }
+
+    pub fn reset(this:*@This())void{
+        
+    }
+
+    pub fn getNextTile(this:*@This())Coord{
+
+    }
+
+    fn upperLeft(this:*@This())void{}
+
 };

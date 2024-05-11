@@ -149,7 +149,6 @@ pub fn tileIsoOriginPosition(
     tile_pix_width: f32,
     diamond_pix_height: f32,
 ) ?struct { tile_origin_iso_x: f32, tile_origin_iso_y: f32 } {
-
     const rectangle_pix_width = tileQuartRectPixWidth(tile_pix_width);
     const rectangle_pix_height = tileQuartRectPixHeight(diamond_pix_height);
 
@@ -182,7 +181,7 @@ pub fn tileIsoOriginPosition(
 }
 
 const expect = @import("std").testing.expect;
-
+const Coord = @import("iso_core.zig").Coord;
 test "diagonal direction" {
     try expect(diagonalDirection(0, 0).? == DiagonalDirection.raising);
     try expect(diagonalDirection(2, 1).? == DiagonalDirection.falling);
@@ -228,16 +227,15 @@ test "tile position" {
     const tile_width: f32 = 129;
     const tile_height: f32 = 65;
 
-    const Coord = struct { x: f32, y: f32 };
-    const upper_left = Coord{ .x = 43, .y = 80 };
-    const upper_right = Coord{ .x = 107, .y = 91 };
-    const bottom_right = Coord{ .x = 110, .y = 103 };
-    const bottom_left = Coord{ .x = 74, .y = 103 };
+    const upper_left = Coord{ .map_array_coord_x = 43, .map_array_coord_y = 80 };
+    const upper_right = Coord{ .map_array_coord_x = 107, .map_array_coord_y = 91 };
+    const bottom_right = Coord{ .map_array_coord_x = 110, .map_array_coord_y = 103 };
+    const bottom_left = Coord{ .map_array_coord_x = 74, .map_array_coord_y = 103 };
 
-    const tile_position_upper_left = tileIsoOriginPosition(upper_left.x, upper_left.y, tile_width, tile_height).?;
-    const tile_position_upper_right = tileIsoOriginPosition(upper_right.x, upper_right.y, tile_width, tile_height).?;
-    const tile_position_bottom_right = tileIsoOriginPosition(bottom_right.x, bottom_right.y, tile_width, tile_height).?;
-    const tile_position_bottom_left = tileIsoOriginPosition(bottom_left.x, bottom_left.y, tile_width, tile_height).?;
+    const tile_position_upper_left = tileIsoOriginPosition(upper_left.map_array_coord_x, upper_left.map_array_coord_y, tile_width, tile_height).?;
+    const tile_position_upper_right = tileIsoOriginPosition(upper_right.map_array_coord_x, upper_right.map_array_coord_y, tile_width, tile_height).?;
+    const tile_position_bottom_right = tileIsoOriginPosition(bottom_right.map_array_coord_x, bottom_right.map_array_coord_y, tile_width, tile_height).?;
+    const tile_position_bottom_left = tileIsoOriginPosition(bottom_left.map_array_coord_x, bottom_left.map_array_coord_y, tile_width, tile_height).?;
 
     const map_coord_to_iso_inc_x = mapCoordToIsoPixIncX(tile_width);
     const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(tile_height);

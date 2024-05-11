@@ -10,6 +10,8 @@ const mapDimensions = @import("iso_map.zig").mapDimensions;
 const MapSideEquations = @import("iso_map.zig").MapSideEquations;
 const mapSideEquations = @import("iso_map.zig").mapSideEquations;
 
+
+pub const Coord = struct { map_array_coord_x: usize, map_array_coord_y: usize };
 pub const Point = struct { x: f32, y: f32 };
 
 pub const Iso = struct {
