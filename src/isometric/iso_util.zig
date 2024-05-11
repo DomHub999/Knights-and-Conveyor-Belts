@@ -2,6 +2,7 @@ const Vec2f = @import("iso_core.zig").Vec2f;
 
 //Given two points, return all points of a rectangle in a consistent order, regardless of the order of the given points
 const Rectangle = struct { upper_left: Vec2f, upper_right: Vec2f, bottom_right: Vec2f, bottom_left: Vec2f };
+//TODO:implement appropriate error handling
 fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     if (x1 < x2 and y1 < y2) { //top left to bottom right
         return Rectangle{
