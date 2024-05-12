@@ -13,11 +13,9 @@ const walkMapCoordFurthestSouth = @import("isometric/iso_tile_walk.zig").walkMap
 const walkMapCoordFurthestWest = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestWest;
 const Coord = @import("isometric/iso_core.zig").Coord;
 
-
 const Error = error{
     initialize_ground_size_mismatch,
 };
-
 
 //TODO:check if the types make sense
 pub const Map = struct {
@@ -34,11 +32,15 @@ pub const Map = struct {
 
     window_pix_width: i32,
     window_pix_height: i32,
-    
-    map_pix_center_x: i32,
-    map_pix_center_y: i32,
 
-    tile_iterator:TileIterator,
+    window_pix_center_x: i32,
+    window_pix_center_y: i32,
+
+    tile_iterator_margin: usize, //additional tiles to be considered out of bounds
+    tile_iterator_upper_left: Coord = undefined,
+    tile_iterator_upper_right: Coord = undefined,
+    tile_iterator_bottom_right: Coord = undefined,
+    tile_iterator_bottom_left: Coord = undefined,
 
     pub fn new(
         map_tiles_width: usize,
@@ -48,17 +50,18 @@ pub const Map = struct {
         window_pix_width: i32,
         window_pix_height: i32,
         map_movement_speed: i32,
+        tile_iterator_margin: usize,
     ) !@This() {
         const this_tile_map = try std.heap.page_allocator.alloc(Tile, map_tiles_width * map_tiles_height);
         const this_iso = Iso.new(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height);
 
-        const map_pix_center_x = @divFloor(window_pix_width , 2);
-        const map_pix_center_y = @divFloor(window_pix_height , 2);
+        const window_pix_center_x = @divFloor(window_pix_width, 2);
+        const window_pix_center_y = @divFloor(window_pix_height, 2);
 
-        const map_start_position_x: i32 = map_pix_center_x - @divFloor(@as(i32,@intFromFloat(tile_pix_width)) , 2);
-        const map_start_position_y: i32 = map_pix_center_y - @divFloor(@as(i32, @intCast(map_tiles_height)) * @as(i32, @intFromFloat(diamond_pix_height)) , 2);
+        const map_start_position_x: i32 = window_pix_center_x - @divFloor(@as(i32, @intFromFloat(tile_pix_width)), 2);
+        const map_start_position_y: i32 = window_pix_center_y - @divFloor(@as(i32, @intCast(map_tiles_height)) * @as(i32, @intFromFloat(diamond_pix_height)), 2);
 
-        const map = @This(){
+        return .{
             .map_position_x = map_start_position_x,
             .map_position_y = map_start_position_y,
             .map_tiles_width = map_tiles_width,
@@ -68,10 +71,10 @@ pub const Map = struct {
             .map_movement_speed = map_movement_speed,
             .window_pix_width = window_pix_width,
             .window_pix_height = window_pix_height,
-            .map_pix_center_x = map_pix_center_x,
-            .map_pix_center_y = map_pix_center_y,
+            .window_pix_center_x = window_pix_center_x,
+            .window_pix_center_y = window_pix_center_y,
+            .tile_iterator_margin = tile_iterator_margin,
         };
-        return map;
     }
 
     pub fn initGround(this: *@This(), ground_map: []const Ground) !void {
@@ -100,36 +103,19 @@ pub const Map = struct {
         }
     }
 
-    pub fn getTileIterator(this:*@This())*TileIterator{
-        this.tile_iterator.refreshTileIterator();
-        return &this.tile_iterator;
+    pub fn refreshTileIterator(this: *@This()) void {
+
+        
     }
+
+    pub fn resetTileIterator(this: *@This()) void {}
+
+    pub fn getNextTile(this: *@This()) Coord {}
+
 
     pub fn deinit(this: *@This()) void {
         std.heap.page_allocator.free(this.tile_map);
     }
 };
 
-const TileIterator = struct{
 
-    uperLeft:Coord,
-    upperRight:Coord,
-    bottomRight:Coord,
-    bottomLeft:Coord,
-    margin:usize, //additional tiles to be considered out of bounds
-
-    pub fn refresh(this:*@This())void{
-
-    }
-
-    pub fn reset(this:*@This())void{
-        
-    }
-
-    pub fn getNextTile(this:*@This())Coord{
-
-    }
-
-    fn upperLeft(this:*@This())void{}
-
-};

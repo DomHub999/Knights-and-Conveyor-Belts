@@ -104,8 +104,8 @@ fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Map
 // as well as the coordinates on the boundary if the point was moved towards the map's inbounds.
 const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
 const BoundrySpot = struct { spot: Vec2f, boundry_violation: Boundry };
-const PointPosition = union(enum) { on_map: void, not_on_map: BoundrySpot };
-fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
+pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundrySpot };
+pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
     const map_boundries = mapBoundries(x, y, map_side_equations);
 
     if (x > map_boundries.upper_right_x and y < map_boundries.upper_right_y) {

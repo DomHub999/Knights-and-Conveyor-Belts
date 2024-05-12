@@ -9,7 +9,8 @@ const isoPixToMapCoordYLean = @import("iso_tile.zig").isoPixToMapCoordYLean;
 const mapDimensions = @import("iso_map.zig").mapDimensions;
 const MapSideEquations = @import("iso_map.zig").MapSideEquations;
 const mapSideEquations = @import("iso_map.zig").mapSideEquations;
-
+const PointPosition = @import("iso_map.zig").PointPosition;
+const isPointOnMap = @import("iso_map.zig").isPointOnMap;
 
 pub const Coord = struct { map_array_coord_x: usize, map_array_coord_y: usize };
 pub const Point = struct { x: f32, y: f32 };
@@ -61,5 +62,11 @@ pub const Iso = struct {
         const map_array_coord_y = isoPixToMapCoordYLean(tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_y, map_array_coord_x);
         if (map_array_coord_x < 0 or map_array_coord_y < 0) return null;
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
+    }
+
+    pub fn isIsoPointOnMap(this:*@This(), iso_pix_x:i32, iso_pix_y:i32, map_pos_x: i32, map_pos_y: i32)PointPosition{
+        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix_x)) - @as(f32, @floatFromInt(map_pos_x));
+        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix_y)) - @as(f32, @floatFromInt(map_pos_y));
+        return isPointOnMap(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, &this.map_side_equations);
     }
 };
