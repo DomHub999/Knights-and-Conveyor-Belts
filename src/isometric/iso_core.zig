@@ -9,8 +9,13 @@ const isoPixToMapCoordYLean = @import("iso_tile.zig").isoPixToMapCoordYLean;
 const mapDimensions = @import("iso_map.zig").mapDimensions;
 const MapSideEquations = @import("iso_map.zig").MapSideEquations;
 const mapSideEquations = @import("iso_map.zig").mapSideEquations;
+const MapDimensions = @import("iso_map.zig").MapDimensions;
 const PointPosition = @import("iso_map.zig").PointPosition;
 const isPointOnMap = @import("iso_map.zig").isPointOnMap;
+const MapSideIntercepts = @import("iso_map.zig").MapSideIntercepts;
+const doesLineInterceptMapBoundries = @import("iso_map.zig").doesLineInterceptMapBoundries;
+
+const LinearEquation = @import("iso_util.zig").LinearEquation;
 
 pub const Coord = struct { map_array_coord_x: usize, map_array_coord_y: usize };
 pub const Point = struct { x: f32, y: f32 };
@@ -25,6 +30,7 @@ pub const Iso = struct {
     map_tiles_width: usize,
     map_tiles_height: usize,
 
+    map_dimensions:MapDimensions,
     map_side_equations: MapSideEquations,
 
     pub fn new(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: usize, map_tiles_height: usize) @This() {
@@ -39,8 +45,8 @@ pub const Iso = struct {
         this.map_tiles_height = map_tiles_height;
         this.map_tiles_width = map_tiles_width;
 
-        const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, @floatFromInt(map_tiles_width), @floatFromInt(map_tiles_height), this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
-        this.map_side_equations = mapSideEquations(&map_dimensions);
+        this.map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, @floatFromInt(map_tiles_width), @floatFromInt(map_tiles_height), this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
+        this.map_side_equations = mapSideEquations(&this.map_dimensions);
 
         return this;
     }
@@ -69,4 +75,11 @@ pub const Iso = struct {
         const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix_y)) - @as(f32, @floatFromInt(map_pos_y));
         return isPointOnMap(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, &this.map_side_equations);
     }
+
+    pub fn doesLineInterceptMap(this:*@This(),line:*const LinearEquation, line_start:*const Point, line_end:*const Point, map_pos_x: i32, map_pos_y: i32)MapSideIntercepts{
+        const line_start_map_pos_adj = Point{.x = line_start.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_start.y - @as(f32, @floatFromInt(map_pos_y)) };
+        const line_end_map_pos_adj = Point{.x = line_end.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_end.y - @as(f32, @floatFromInt(map_pos_y)) };
+        return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, line,  &line_start_map_pos_adj, &line_end_map_pos_adj);
+    }
+
 };

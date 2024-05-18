@@ -1,7 +1,7 @@
-const Vec2f = @import("iso_core.zig").Vec2f;
+const Point = @import("iso_core.zig").Point;
 
 //Given two points, return all points of a rectangle in a consistent order, regardless of the order of the given points
-const Rectangle = struct { upper_left: Vec2f, upper_right: Vec2f, bottom_right: Vec2f, bottom_left: Vec2f };
+const Rectangle = struct { upper_left: Point, upper_right: Point, bottom_right: Point, bottom_left: Point };
 //TODO:implement appropriate error handling
 fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
     if (x1 < x2 and y1 < y2) { //top left to bottom right
@@ -38,6 +38,8 @@ fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
 }
 
 //Math functins for linear equations
+pub const LinearEquation = struct { m: f32, b: f32 };
+
 pub fn slope(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
     return (y2 - y1) / (x2 - x1);
 }
@@ -51,10 +53,20 @@ pub fn findLinearY(m: f32, x: f32, b: f32) f32 {
     return m * x + b;
 }
 
+const FLOAT_EQUALITY_THRESHOLD: f32 = 0.01;
+pub fn lineIntercept(line1:*const LinearEquation, line2:*const LinearEquation) ?Point {
+    if (@abs(line1.m - line2.m) < FLOAT_EQUALITY_THRESHOLD) return null;
+
+    var point = Point{ .x = 0, .y = 0 };
+    point.x = (line1.b - line2.b) / (line2.m - line1.m);
+    point.y = line1.m * point.x + line1.b;
+    return point;
+}
+
 const expect = @import("std").testing.expect;
 
 test "area rectangle" {
-    const Points = struct { p1: Vec2f, p2: Vec2f };
+    const Points = struct { p1: Point, p2: Point };
     const test_points = [_]Points{
         Points{ .p1 = .{ .x = 0, .y = 0 }, .p2 = .{ .x = 1, .y = 1 } },
         Points{ .p1 = .{ .x = 1, .y = 1 }, .p2 = .{ .x = 0, .y = 0 } },
@@ -102,4 +114,28 @@ test "find linear x and y" {
 
     try expect(resultX == 3);
     try expect(resultY == -3);
+}
+
+test "lines intercept1" {
+    const line1 = LinearEquation{ .m = 0.5, .b = 0 };
+    const line2 = LinearEquation{ .m = 0.7, .b = -4 };
+
+    const point_intercept = lineIntercept(&line1, &line2).?;
+    try expect(@round(point_intercept.x) == 20 and @round(point_intercept.y) == 10);
+}
+
+test "lines intercept2" {
+    const line1 = LinearEquation{ .m = 0.5, .b = 0 };
+    const line2 = LinearEquation{ .m = 0.5, .b = -4 };
+
+    const point_intercept = lineIntercept(&line1, &line2);
+    try expect(point_intercept == null);
+}
+
+test "lines intercept3" {
+    const line1 = LinearEquation{ .m = 0.7, .b = -4 };
+    const line2 = LinearEquation{ .m = 0.5, .b = -4 };
+
+    const point_intercept = lineIntercept(&line1, &line2).?;
+    try expect(@round(point_intercept.x) == 0 and @round(point_intercept.y) == -4);
 }

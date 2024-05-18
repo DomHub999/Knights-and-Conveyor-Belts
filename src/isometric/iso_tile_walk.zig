@@ -57,48 +57,63 @@ pub fn walkMapCoordNorthWest(map_array_coord_x: usize, map_array_coord_y: usize,
     return .{ .map_array_coord_x = map_array_coord_x - step_size, .map_array_coord_y = map_array_coord_y };
 }
 
-
 pub fn walkMapCoordFurthestNorth(map_array_coord_x: usize, map_array_coord_y: usize) Coord {
-
     if (map_array_coord_x >= map_array_coord_y) {
-        return .{.map_array_coord_x = map_array_coord_x - map_array_coord_y, .map_array_coord_y = 0};
+        return .{ .map_array_coord_x = map_array_coord_x - map_array_coord_y, .map_array_coord_y = 0 };
     } else {
-        return .{.map_array_coord_x = 0, .map_array_coord_y = map_array_coord_y - map_array_coord_x};
+        return .{ .map_array_coord_x = 0, .map_array_coord_y = map_array_coord_y - map_array_coord_x };
     }
 }
+
+pub fn walkMapCoordFurthestNorthEast(map_array_coord_x: usize) Coord {
+    return .{ .map_array_coord_x = map_array_coord_x, .map_array_coord_y = 0 };
+}
+
 pub fn walkMapCoordFurthestEast(map_array_coord_x: usize, map_array_coord_y: usize, map_tile_width: usize) Coord {
-
     const max_array_coord_x = map_tile_width - 1;
-    
+
     if (map_array_coord_x + map_array_coord_y <= max_array_coord_x) {
-        return .{.map_array_coord_x = map_array_coord_x + map_array_coord_y, .map_array_coord_y = 0};
+        return .{ .map_array_coord_x = map_array_coord_x + map_array_coord_y, .map_array_coord_y = 0 };
     } else {
-        return .{.map_array_coord_x = max_array_coord_x, .map_array_coord_y = map_array_coord_y - (max_array_coord_x - map_array_coord_x)};
+        return .{ .map_array_coord_x = max_array_coord_x, .map_array_coord_y = map_array_coord_y - (max_array_coord_x - map_array_coord_x) };
     }
-
 }
-pub fn walkMapCoordFurthestSouth(map_array_coord_x: usize, map_array_coord_y: usize, map_tile_width: usize, map_tile_height: usize) Coord {
 
+pub fn walkMapCoordFurthestSouthEast(map_array_coord_y: usize, map_tile_width: usize) Coord {
+    const max_array_coord_x = map_tile_width - 1;
+
+    return .{ .map_array_coord_x = max_array_coord_x, .map_array_coord_y = map_array_coord_y };
+}
+
+pub fn walkMapCoordFurthestSouth(map_array_coord_x: usize, map_array_coord_y: usize, map_tile_width: usize, map_tile_height: usize) Coord {
     const max_array_coord_x = map_tile_width - 1;
     const max_array_coord_y = map_tile_height - 1;
 
     if (map_array_coord_x >= map_array_coord_y) {
-        return .{.map_array_coord_x = max_array_coord_x, .map_array_coord_y = map_array_coord_y + (max_array_coord_x - map_array_coord_x)};
+        return .{ .map_array_coord_x = max_array_coord_x, .map_array_coord_y = map_array_coord_y + (max_array_coord_x - map_array_coord_x) };
     } else {
-        return .{.map_array_coord_x = map_array_coord_x + (max_array_coord_y - map_array_coord_y), .map_array_coord_y = max_array_coord_y};
+        return .{ .map_array_coord_x = map_array_coord_x + (max_array_coord_y - map_array_coord_y), .map_array_coord_y = max_array_coord_y };
     }
-
 }
+
+pub fn walkFurthestSouthWest(map_array_coord_x: usize, map_tile_height: usize) Coord {
+    const max_array_coord_y = map_tile_height - 1;
+
+    return .{ .map_array_coord_x = map_array_coord_x, .map_array_coord_y = max_array_coord_y };
+}
+
 pub fn walkMapCoordFurthestWest(map_array_coord_x: usize, map_array_coord_y: usize, map_tile_height: usize) Coord {
-    
     const max_array_coord_y = map_tile_height - 1;
 
     if (map_array_coord_x + map_array_coord_y <= max_array_coord_y) {
-        return .{.map_array_coord_x = 0, .map_array_coord_y = map_array_coord_y + map_array_coord_x};
-    }else{
-        return .{.map_array_coord_x = map_array_coord_x - (max_array_coord_y - map_array_coord_y ), .map_array_coord_y = max_array_coord_y};
+        return .{ .map_array_coord_x = 0, .map_array_coord_y = map_array_coord_y + map_array_coord_x };
+    } else {
+        return .{ .map_array_coord_x = map_array_coord_x - (max_array_coord_y - map_array_coord_y), .map_array_coord_y = max_array_coord_y };
     }
+}
 
+pub fn walkMapCoordFurthestNorthWest(map_array_coord_y: usize) Coord {
+    return .{ .map_array_coord_x = 0, .map_array_coord_y = map_array_coord_y };
 }
 
 fn isOutOfBoundsMapHead(map_array_coord: usize, step_size: usize) bool {
@@ -110,7 +125,6 @@ fn isOutOfBoundsWidth(map_array_coord_x: usize, step_size: usize, map_tile_width
 fn isOutOfBoundsHeight(map_array_coord_y: usize, step_size: usize, map_tile_height: usize) bool {
     return map_array_coord_y + step_size >= map_tile_height;
 }
-
 
 const expect = @import("std").testing.expect;
 const TEST_COORD = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
@@ -157,50 +171,80 @@ test "walkMapCoordNorthWest" {
     try expect(result.map_array_coord_x == expected_result.map_array_coord_x and result.map_array_coord_y == expected_result.map_array_coord_y);
 }
 
-
 const TEST_FURTHEST_MAP_TILE_WIDTH: usize = 6;
 const TEST_FURTHEST_MAP_TILE_HEIGHT: usize = 5;
 test "walkMapCoordFurthestNorth" {
-    var test_set = Coord{.map_array_coord_x = 1, .map_array_coord_y = 3};
-    var expected_result = Coord{.map_array_coord_x = 0, .map_array_coord_y = 2};
+    var test_set = Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 };
+    var expected_result = Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 };
     var actual_result = walkMapCoordFurthestNorth(test_set.map_array_coord_x, test_set.map_array_coord_y);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
-    
-    test_set = Coord{.map_array_coord_x = 5, .map_array_coord_y = 2};
-    expected_result = Coord{.map_array_coord_x = 3, .map_array_coord_y = 0};
+
+    test_set = Coord{ .map_array_coord_x = 5, .map_array_coord_y = 2 };
+    expected_result = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 0 };
     actual_result = walkMapCoordFurthestNorth(test_set.map_array_coord_x, test_set.map_array_coord_y);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 }
+
+test "walkMapCoordFurthestNorthEast" {
+    const test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
+    const expected_result = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 0 };
+    const actual_result = walkMapCoordFurthestNorthEast(test_set.map_array_coord_x);
+    try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
+}
+
 test "walkMapCoordFurthestEast" {
-    var test_set = Coord{.map_array_coord_x = 1, .map_array_coord_y = 1};
-    var expected_result = Coord{.map_array_coord_x = 2, .map_array_coord_y = 0};
+    var test_set = Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 };
+    var expected_result = Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 };
     var actual_result = walkMapCoordFurthestEast(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_WIDTH);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
-    
-    test_set = Coord{.map_array_coord_x = 3, .map_array_coord_y = 3};
-    expected_result = Coord{.map_array_coord_x = 5, .map_array_coord_y = 1};
+
+    test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 3 };
+    expected_result = Coord{ .map_array_coord_x = 5, .map_array_coord_y = 1 };
     actual_result = walkMapCoordFurthestEast(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_WIDTH);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 }
+
+test "walkMapCoordFurthestSouthEast" {
+    const test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
+    const expected_result = Coord{ .map_array_coord_x = 5, .map_array_coord_y = 2 };
+    const actual_result = walkMapCoordFurthestSouthEast(test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_WIDTH);
+    try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
+}
+
 test "walkMapCoordFurthestSouth" {
-    var test_set = Coord{.map_array_coord_x = 0, .map_array_coord_y = 2};
-    var expected_result = Coord{.map_array_coord_x = 2, .map_array_coord_y = 4};
+    var test_set = Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 };
+    var expected_result = Coord{ .map_array_coord_x = 2, .map_array_coord_y = 4 };
     var actual_result = walkMapCoordFurthestSouth(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_WIDTH, TEST_FURTHEST_MAP_TILE_HEIGHT);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 
-    test_set = Coord{.map_array_coord_x = 2, .map_array_coord_y = 0};
-    expected_result = Coord{.map_array_coord_x = 5, .map_array_coord_y = 3};
+    test_set = Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 };
+    expected_result = Coord{ .map_array_coord_x = 5, .map_array_coord_y = 3 };
     actual_result = walkMapCoordFurthestSouth(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_WIDTH, TEST_FURTHEST_MAP_TILE_HEIGHT);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 }
+
+test "walkFurthestSouthWest" {
+    const test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
+    const expected_result = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 4 };
+    const actual_result = walkFurthestSouthWest(test_set.map_array_coord_x, TEST_FURTHEST_MAP_TILE_HEIGHT);
+    try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
+}
+
 test "walkMapCoordFurthestWest" {
-    var test_set = Coord{.map_array_coord_x = 1, .map_array_coord_y = 1};
-    var expected_result = Coord{.map_array_coord_x = 0, .map_array_coord_y = 2};
+    var test_set = Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 };
+    var expected_result = Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 };
     var actual_result = walkMapCoordFurthestWest(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_HEIGHT);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 
-    test_set = Coord{.map_array_coord_x = 3, .map_array_coord_y = 2};
-    expected_result = Coord{.map_array_coord_x = 1, .map_array_coord_y = 4};
+    test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
+    expected_result = Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 };
     actual_result = walkMapCoordFurthestWest(test_set.map_array_coord_x, test_set.map_array_coord_y, TEST_FURTHEST_MAP_TILE_HEIGHT);
+    try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
+}
+
+test "walkMapCoordFurthestNorthWest" {
+    const test_set = Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 };
+    const expected_result = Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 };
+    const actual_result = walkMapCoordFurthestNorthWest(test_set.map_array_coord_y);
     try expect(actual_result.map_array_coord_x == expected_result.map_array_coord_x and actual_result.map_array_coord_y == expected_result.map_array_coord_y);
 }

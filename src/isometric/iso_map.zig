@@ -1,4 +1,4 @@
-const Vec2f = @import("iso_core.zig").Point;
+const Point = @import("iso_core.zig").Point;
 const mapCoordToIsoPixX = @import("iso_tile.zig").mapCoordToIsoPixX;
 const mapCoordToIsoPixY = @import("iso_tile.zig").mapCoordToIsoPixY;
 const mapCoordToIsoPixIncX = @import("iso_tile.zig").mapCoordToIsoPixIncX;
@@ -8,10 +8,11 @@ const slope = @import("iso_util.zig").slope;
 const yIntercept = @import("iso_util.zig").yIntercept;
 const findLinearX = @import("iso_util.zig").findLinearX;
 const findLinearY = @import("iso_util.zig").findLinearY;
-
+const lineIntercept = @import("iso_util.zig").lineIntercept;
+const LinearEquation = @import("iso_util.zig").LinearEquation;
 
 //Given a map array and its dimensions, computes the four points defining an isometric diamond-shaped map
-const MapDimensions = struct { top: Vec2f, right: Vec2f, bottom: Vec2f, left: Vec2f };
+pub const MapDimensions = struct { top: Point, right: Point, bottom: Point, left: Point };
 pub fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: f32, map_tiles_height: f32, map_coord_to_iso_inc_x: f32, map_coord_to_iso_inc_y: f32) MapDimensions {
     const map_array_coord_x = map_tiles_width - 1;
     const map_array_coord_y = map_tiles_height - 1;
@@ -29,14 +30,13 @@ pub fn mapDimensions(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_wid
     const left_iso_pix_y = mapCoordToIsoPixY(0, map_array_coord_y, map_coord_to_iso_inc_y) + diamond_pix_height / 2;
 
     return MapDimensions{
-        .top = Vec2f{ .x = top_iso_pix_x, .y = top_iso_pix_y },
-        .right = Vec2f{ .x = right_iso_pix_x, .y = right_iso_pix_y },
-        .bottom = Vec2f{ .x = bottom_iso_pix_x, .y = bottom_iso_pix_y },
-        .left = Vec2f{ .x = left_iso_pix_x, .y = left_iso_pix_y },
+        .top = Point{ .x = top_iso_pix_x, .y = top_iso_pix_y },
+        .right = Point{ .x = right_iso_pix_x, .y = right_iso_pix_y },
+        .bottom = Point{ .x = bottom_iso_pix_x, .y = bottom_iso_pix_y },
+        .left = Point{ .x = left_iso_pix_x, .y = left_iso_pix_y },
     };
 }
 
-const LinearEquation = struct { m: f32, b: f32 };
 pub const MapSideEquations = struct {
     upper_right: LinearEquation,
     bottom_right: LinearEquation,
@@ -77,7 +77,6 @@ const MapBoundries = struct {
     upper_left_y: f32,
 };
 
-
 //Calculates a map's boundaries for all four sides along the x and y axes, given a point and the linear equations for each side of the map
 fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) MapBoundries {
     var map_boundries: MapBoundries = undefined;
@@ -98,12 +97,11 @@ fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Map
     return map_boundries;
 }
 
-
-// Determines whether a given point is on a map or out of bounds. 
-// If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds, 
+// Determines whether a given point is on a map or out of bounds.
+// If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds,
 // as well as the coordinates on the boundary if the point was moved towards the map's inbounds.
 const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
-const BoundrySpot = struct { spot: Vec2f, boundry_violation: Boundry };
+const BoundrySpot = struct { spot: Point, boundry_violation: Boundry };
 pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundrySpot };
 pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
     const map_boundries = mapBoundries(x, y, map_side_equations);
@@ -122,6 +120,49 @@ pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations)
     }
 
     return PointPosition.on_map;
+}
+
+const Intercept = union(enum) {
+    no: void,
+    yes: Point,
+};
+
+pub const MapSideIntercepts = struct {
+    upper_right: Intercept,
+    bottom_right: Intercept,
+    bottom_left: Intercept,
+    upper_left: Intercept,
+};
+
+// A line to be tested should be moved (line_start and line_end) according to the map movement
+pub fn doesLineInterceptMapBoundries(map_side_equations: *const MapSideEquations, map_dimensions: *const MapDimensions, line: *LinearEquation, line_start: *const Point, line_end: *const Point) MapSideIntercepts {
+    var map_side_intercepts: MapSideIntercepts = .{ .upper_right = .no, .bottom_right = .no, .bottom_left = .no, .upper_left = .no };
+
+    map_side_intercepts.upper_right = determineIntercept(line, map_side_equations.upper_right, line_start, line_end, map_dimensions.top, map_dimensions.bottom);
+    map_side_intercepts.bottom_right = determineIntercept(line, map_side_equations.bottom_right, line_start, line_end, map_dimensions.right, map_dimensions.bottom);
+    map_side_intercepts.bottom_left = determineIntercept(line, map_side_equations.bottom_left, line_start, line_end, map_dimensions.left, map_dimensions.bottom);
+    map_side_intercepts.upper_left = determineIntercept(line, map_side_equations.upper_left, line_start, line_end, map_dimensions.top, map_dimensions.left);
+
+    return map_side_intercepts;
+}
+
+fn determineIntercept(line: *const LinearEquation, map_side_equation:*const LinearEquation, line_start:*const Point, line_end:*const Point, map_boundry_start:*const Point, map_boundry_end:*const Point)Intercept{
+
+    var intercept:Intercept = .no;
+    const intercept_point = lineIntercept(line, map_side_equation);
+    if (intercept_point) |point| {
+        const intercept_within_tested_line = isPointWithinLine(&point, line_start, line_end);
+        const intercept_within_map_side = isPointWithinLine(&point, map_boundry_start, map_boundry_end);
+        if (intercept_within_tested_line and intercept_within_map_side) {
+            intercept = .{.yes = intercept_point };
+        }
+    }
+    return intercept;
+}
+
+//TODO:error handling if the tested line is upside down
+fn isPointWithinLine(point: *const Point, line_start: *const Point, line_end: *const Point) bool {
+    return !(point.x < line_start.x or point.y < line_start.y or point.x > line_end.x or point.y > line_end.y);
 }
 
 const expect = @import("std").testing.expect;
@@ -162,15 +203,15 @@ test "is point on map" {
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_side_equations = mapSideEquations(&map_dimensions);
 
-    const point_on_map_1 = Vec2f{ .x = 4, .y = 0 };
-    const point_on_map_2 = Vec2f{ .x = 4, .y = 7 };
-    const point_on_map_3 = Vec2f{ .x = 9, .y = 7 };
-    const point_on_map_4 = Vec2f{ .x = -3, .y = 4 };
+    const point_on_map_1 = Point{ .x = 4, .y = 0 };
+    const point_on_map_2 = Point{ .x = 4, .y = 7 };
+    const point_on_map_3 = Point{ .x = 9, .y = 7 };
+    const point_on_map_4 = Point{ .x = -3, .y = 4 };
 
-    const point_not_on_map_1 = Vec2f{ .x = 5, .y = 0 };
-    const point_not_on_map_2 = Vec2f{ .x = 4, .y = 9 };
-    const point_not_on_map_3 = Vec2f{ .x = 16, .y = 7 };
-    const point_not_on_map_4 = Vec2f{ .x = -5, .y = 4 };
+    const point_not_on_map_1 = Point{ .x = 5, .y = 0 };
+    const point_not_on_map_2 = Point{ .x = 4, .y = 9 };
+    const point_not_on_map_3 = Point{ .x = 16, .y = 7 };
+    const point_not_on_map_4 = Point{ .x = -5, .y = 4 };
 
     const is_on_map_1 = isPointOnMap(point_on_map_1.x, point_on_map_1.y, &map_side_equations);
     const is_on_map_2 = isPointOnMap(point_on_map_2.x, point_on_map_2.y, &map_side_equations);

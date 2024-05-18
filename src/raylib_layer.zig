@@ -95,7 +95,7 @@ pub const Hardware = struct {
 };
 
 //debugging
-pub fn drawCoordinates(x: usize, y: usize) void {
+pub fn drawCoordinates(x: i32, y: i32) void {
     rl.DrawText(rl.TextFormat("%d", x), 10, 10, 22, rl.WHITE);
     rl.DrawText(rl.TextFormat("%d", y), 10, 40, 22, rl.WHITE);
 }

@@ -3,15 +3,7 @@ const Tile = @import("tile.zig").Tile;
 const Ground = @import("tile.zig").Ground;
 const Iso = @import("isometric/iso_core.zig").Iso;
 
-const walkMapCoordNorth = @import("isometric/iso_tile_walk.zig").walkMapCoordNorth;
-const walkMapCoordEast = @import("isometric/iso_tile_walk.zig").walkMapCoordEast;
-const walkMapCoordSouth = @import("isometric/iso_tile_walk.zig").walkMapCoordSouth;
-const walkMapCoordWest = @import("isometric/iso_tile_walk.zig").walkMapCoordWest;
-const walkMapCoordFurthestNorth = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestNorth;
-const walkMapCoordFurthestEast = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestEast;
-const walkMapCoordFurthestSouth = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestSouth;
-const walkMapCoordFurthestWest = @import("isometric/iso_tile_walk.zig").walkMapCoordFurthestWest;
-const Coord = @import("isometric/iso_core.zig").Coord;
+
 
 const Error = error{
     initialize_ground_size_mismatch,
@@ -30,17 +22,7 @@ pub const Map = struct {
 
     map_movement_speed: i32,
 
-    window_pix_width: i32,
-    window_pix_height: i32,
 
-    window_pix_center_x: i32,
-    window_pix_center_y: i32,
-
-    tile_iterator_margin: usize, //additional tiles to be considered out of bounds
-    tile_iterator_upper_left: Coord = undefined,
-    tile_iterator_upper_right: Coord = undefined,
-    tile_iterator_bottom_right: Coord = undefined,
-    tile_iterator_bottom_left: Coord = undefined,
 
     pub fn new(
         map_tiles_width: usize,
@@ -50,7 +32,7 @@ pub const Map = struct {
         window_pix_width: i32,
         window_pix_height: i32,
         map_movement_speed: i32,
-        tile_iterator_margin: usize,
+        
     ) !@This() {
         const this_tile_map = try std.heap.page_allocator.alloc(Tile, map_tiles_width * map_tiles_height);
         const this_iso = Iso.new(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height);
@@ -69,11 +51,6 @@ pub const Map = struct {
             .tile_map = this_tile_map,
             .iso = this_iso,
             .map_movement_speed = map_movement_speed,
-            .window_pix_width = window_pix_width,
-            .window_pix_height = window_pix_height,
-            .window_pix_center_x = window_pix_center_x,
-            .window_pix_center_y = window_pix_center_y,
-            .tile_iterator_margin = tile_iterator_margin,
         };
     }
 
@@ -102,16 +79,6 @@ pub const Map = struct {
             },
         }
     }
-
-    pub fn refreshTileIterator(this: *@This()) void {
-
-        
-    }
-
-    pub fn resetTileIterator(this: *@This()) void {}
-
-    pub fn getNextTile(this: *@This()) Coord {}
-
 
     pub fn deinit(this: *@This()) void {
         std.heap.page_allocator.free(this.tile_map);

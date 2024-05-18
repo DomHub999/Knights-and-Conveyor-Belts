@@ -40,6 +40,8 @@ pub fn runGame() !void {
 
         drawer.drawMap(&map);
 
+        @import("raylib_layer.zig").drawCoordinates(map.map_position_x, map.map_position_y);
+
         drawer.finalizeScreen();
     }
 }
