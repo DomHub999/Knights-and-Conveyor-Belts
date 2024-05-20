@@ -46,19 +46,21 @@ pub const MapSideEquations = struct {
 
 //Converts the four points of an isometric diamond-shaped map into four linear equations that outline its boundaries
 pub fn mapSideEquations(map_dimensions: *const MapDimensions) MapSideEquations {
-    var map_side_equations: MapSideEquations = undefined;
-
-    map_side_equations.upper_right.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
-    map_side_equations.upper_right.b = yIntercept(map_side_equations.upper_right.m, map_dimensions.top.x, map_dimensions.top.y);
-
-    map_side_equations.bottom_right.m = slope(map_dimensions.right.x, map_dimensions.right.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
-    map_side_equations.bottom_right.b = yIntercept(map_side_equations.bottom_right.m, map_dimensions.right.x, map_dimensions.right.y);
-
-    map_side_equations.bottom_left.m = slope(map_dimensions.left.x, map_dimensions.left.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
-    map_side_equations.bottom_left.b = yIntercept(map_side_equations.bottom_left.m, map_dimensions.left.x, map_dimensions.left.y);
-
-    map_side_equations.upper_left.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.left.x, map_dimensions.left.y);
-    map_side_equations.upper_left.b = yIntercept(map_side_equations.upper_left.m, map_dimensions.top.x, map_dimensions.top.y);
+    var map_side_equations: MapSideEquations = .{
+        .upper_right = .{ .regular = undefined },
+        .bottom_right = .{ .regular = undefined },
+        .bottom_left = .{ .regular = undefined },
+        .upper_left = .{ .regular = undefined },
+        };
+        
+    map_side_equations.upper_right.regular.m  = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
+    map_side_equations.upper_right.regular.b  = yIntercept(map_side_equations.upper_right.regular.m, map_dimensions.top.x, map_dimensions.top.y);
+    map_side_equations.bottom_right.regular.m = slope(map_dimensions.right.x, map_dimensions.right.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
+    map_side_equations.bottom_right.regular.b = yIntercept(map_side_equations.bottom_right.regular.m, map_dimensions.right.x, map_dimensions.right.y);
+    map_side_equations.bottom_left.regular.m  = slope(map_dimensions.left.x, map_dimensions.left.y, map_dimensions.bottom.x, map_dimensions.bottom.y);
+    map_side_equations.bottom_left.regular.b  = yIntercept(map_side_equations.bottom_left.regular.m, map_dimensions.left.x, map_dimensions.left.y);
+    map_side_equations.upper_left.regular.m   = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.left.x, map_dimensions.left.y);
+    map_side_equations.upper_left.regular.b   = yIntercept(map_side_equations.upper_left.regular.m, map_dimensions.top.x, map_dimensions.top.y);
 
     return map_side_equations;
 }
@@ -247,7 +249,7 @@ test "line intercept boundry" {
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_side_equations = mapSideEquations(&map_dimensions);
 
-    var line = LinearEquation{ .m = 0, .b = 2 };
+    var line = LinearEquation{ .regular = .{ .m = 0, .b = 2 }};
     var line_start = Point{ .x = -4, .y = 2 };
     var line_end = Point{ .x = 12, .y = 2 };
     var result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -256,7 +258,7 @@ test "line intercept boundry" {
     try expect(result.bottom_left == .no);
     try expect(result.upper_left.yes.x == 0 and result.upper_left.yes.y == 2);
 
-    line = LinearEquation{ .m = 0, .b = 9 };
+    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 }};
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 8, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -265,7 +267,7 @@ test "line intercept boundry" {
     try expect(result.bottom_left.yes.x == 6 and result.bottom_left.yes.y == 9);
     try expect(result.upper_left == .no);
 
-    line = LinearEquation{ .m = 0, .b = 9 };
+    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 }};
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 16, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -274,13 +276,31 @@ test "line intercept boundry" {
     try expect(result.bottom_left.yes.x == 6 and result.bottom_left.yes.y == 9);
     try expect(result.upper_left == .no);
 
-    line = LinearEquation{ .m = 0, .b = 9 };
+    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 }};
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 16, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
     try expect(result.upper_right == .no);
     try expect(result.bottom_right.yes.x == 10 and result.bottom_left.yes.y == 9);
     try expect(result.bottom_left.yes.x == 6 and result.bottom_left.yes.y == 9);
+    try expect(result.upper_left == .no);
+
+    line = LinearEquation{ .vertical = .{ .a = 12 }};
+    line_start = Point{ .x = 12, .y = 0 };
+    line_end = Point{ .x = 12, .y = 14 };
+    result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
+    try expect(result.upper_right.yes.x == 12 and result.upper_right.yes.y == 4);
+    try expect(result.bottom_right.yes.x == 12 and result.bottom_right.yes.y == 8);
+    try expect(result.bottom_left == .no);
+    try expect(result.upper_left == .no);
+
+    line = LinearEquation{ .vertical = .{ .a = 20 }};
+    line_start = Point{ .x = 20, .y = 0 };
+    line_end = Point{ .x = 20, .y = 14 };
+    result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
+    try expect(result.upper_right == .no);
+    try expect(result.bottom_right == .no);
+    try expect(result.bottom_left == .no);
     try expect(result.upper_left == .no);
 
 }

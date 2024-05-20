@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const Point = @import("iso_core.zig").Point;
-// const indexTwoDimArray = @import("././utility.zig").indexTwoDimArray;
 const indexTwoDimArray = @import("utility.zig").indexTwoDimArray;
 
 //Given two points, return all points of a rectangle in a consistent order, regardless of the order of the given points
@@ -65,7 +64,7 @@ pub fn findLinearY(m: f32, x: f32, b: f32) f32 {
 
 const FLOAT_EQUALITY_THRESHOLD: f32 = 0.01;
 pub fn lineIntercept(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
-    const case_handler = createLinearEquationsCombCases(line1, line2);
+    const case_handler = getLinearEquationCombCase(line1, line2);
     return case_handler(line1, line2);
 }
 
@@ -77,20 +76,26 @@ pub fn lineIntercept(line1: *const LinearEquation, line2: *const LinearEquation)
 // };
 
 fn regularLinearEquations(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
-    if (@abs(line1.m - line2.m) < FLOAT_EQUALITY_THRESHOLD) return null;
+    const first_line = &line1.regular;
+    const second_line = &line2.regular;
+
+    if (@abs(first_line.m - second_line.m) < FLOAT_EQUALITY_THRESHOLD) return null;
 
     var point = Point{ .x = 0, .y = 0 };
-    point.x = (line1.b - line2.b) / (line2.m - line1.m);
-    point.y = line1.m * point.x + line1.b;
+    point.x = (first_line.b - second_line.b) / (second_line.m - first_line.m);
+    point.y = first_line.m * point.x + first_line.b;
     return point;
 }
 fn verticalLinearEquations(_: *const LinearEquation, _: *const LinearEquation) ?Point {
     return null;
 }
 fn regVertLinearEquations(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
+    const first_line = &line1.regular;
+    const second_line = &line2.vertical;
+
     var point = Point{ .x = 0, .y = 0 };
-    point.y = line1.regular.b * line2.vertical.a + line1.regular.b;
-    point.x = line2.vertical.a;
+    point.y = first_line.m * second_line.a + first_line.b;
+    point.x = second_line.a;
     return point;
 }
 fn vertRegLinearEquations(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
@@ -118,20 +123,9 @@ fn getLinearEquationCombCase(equation1: *const LinearEquation, equation2: *const
 
     const i = indexTwoDimArray(int_from_enum1, int_from_enum2, 2);
     return linear_equation_case_handlers[i];
-
 }
 
 const expect = @import("std").testing.expect;
-
-test "getLinearQuationCombCase" {
-    const reg_eq = LinearEquation{.regular = .{.m = 0, .b = 0}};
-    const vert_eq = LinearEquation{.vertical = .{.a = 0}};
-    _= vert_eq;
-
-    const result = getLinearEquationCombCase(&reg_eq, &reg_eq);
-    _ = result;
-
-}
 
 test "area rectangle" {
     const Points = struct { p1: Point, p2: Point };
@@ -166,8 +160,6 @@ test "area rectangle" {
     }
 }
 
-
-
 test "slope" {
     const result = slope(-5, 13, 3, -3);
     try expect(result == -2);
@@ -186,28 +178,68 @@ test "find linear x and y" {
     try expect(resultY == -3);
 }
 
-// test "lines intercept1" {
-//     const line1 = LinearEquation{ .m = 0.5, .b = 0 };
-//     const line2 = LinearEquation{ .m = 0.7, .b = -4 };
+test "lines intercept1" {
+    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
+    const line2 = LinearEquation{ .regular = .{.m = 0.7, .b = -4} };
 
-//     const point_intercept = lineIntercept(&line1, &line2).?;
-//     try expect(@round(point_intercept.x) == 20 and @round(point_intercept.y) == 10);
-// }
+    const point_intercept = lineIntercept(&line1, &line2).?;
+    try expect(@round(point_intercept.x) == 20 and @round(point_intercept.y) == 10);
+}
 
-// test "lines intercept2" {
-//     const line1 = LinearEquation{ .m = 0.5, .b = 0 };
-//     const line2 = LinearEquation{ .m = 0.5, .b = -4 };
+test "lines intercept2" {
+    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
+    const line2 = LinearEquation{ .regular = .{.m = 0.5, .b = -4} };
 
-//     const point_intercept = lineIntercept(&line1, &line2);
-//     try expect(point_intercept == null);
-// }
+    const point_intercept = lineIntercept(&line1, &line2);
+    try expect(point_intercept == null);
+}
 
-// test "lines intercept3" {
-//     const line1 = LinearEquation{ .m = 0.7, .b = -4 };
-//     const line2 = LinearEquation{ .m = 0.5, .b = -4 };
+test "lines intercept3" {
+    const line1 = LinearEquation{ .regular = .{.m = 0.7, .b = -4} };
+    const line2 = LinearEquation{ .regular = .{.m = 0.5, .b = -4} };
 
-//     const point_intercept = lineIntercept(&line1, &line2).?;
-//     try expect(@round(point_intercept.x) == 0 and @round(point_intercept.y) == -4);
-// }
+    const point_intercept = lineIntercept(&line1, &line2).?;
+    try expect(@round(point_intercept.x) == 0 and @round(point_intercept.y) == -4);
+}
+
+test "lines intercept4" {
+    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
+    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+
+    const point_intercept = lineIntercept(&line1, &line2).?;
+    try expect(@round(point_intercept.x) == 4 and @round(point_intercept.y) == 2);
+}
+
+test "lines intercept5" {
+    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
+    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+
+    const point_intercept = lineIntercept(&line2, &line1).?;
+    try expect(@round(point_intercept.x) == 4 and @round(point_intercept.y) == 2);
+}
+
+test "lines intercept6" {
+    const line1 = LinearEquation{ .vertical = .{.a = 2} };
+    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+
+    const point_intercept = lineIntercept(&line2, &line1);
+    try expect(point_intercept == null);
+}
 
 
+test "getLinearQuationCombCase" {
+    const reg_eq = LinearEquation{ .regular = .{ .m = 0, .b = 0 } };
+    const vert_eq = LinearEquation{ .vertical = .{ .a = 0 } };
+
+    var result = getLinearEquationCombCase(&reg_eq, &reg_eq);
+    try expect(result == regularLinearEquations);
+
+    result = getLinearEquationCombCase(&vert_eq, &reg_eq);
+    try expect(result == vertRegLinearEquations);
+
+    result = getLinearEquationCombCase(&reg_eq, &vert_eq);
+    try expect(result == regVertLinearEquations);
+
+    result = getLinearEquationCombCase(&vert_eq, &vert_eq);
+    try expect(result == verticalLinearEquations);
+}
