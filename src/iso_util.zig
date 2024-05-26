@@ -42,10 +42,9 @@ fn rectangleEdges(x1: f32, y1: f32, x2: f32, y2: f32) ?Rectangle {
 
 //Math functins for linear equations
 //TODO:Type can be deleted
-// pub const LinearEquation = struct { m: f32, b: f32 };
 
 pub const LinearEquation = union(enum) {
-    regular: struct { m: f32, b: f32 },
+    has_slope: struct { m: f32, b: f32 },
     vertical: struct { a: f32 },
 };
 
@@ -67,17 +66,9 @@ pub fn lineIntercept(line1: *const LinearEquation, line2: *const LinearEquation)
     const case_handler = getLinearEquationCombCase(line1, line2);
     return case_handler(line1, line2);
 }
-
-// const LinearEquationCombCase = enum(u2) {
-//     both_regular = 0b00,
-//     both_vertical = 0b11,
-//     regular_vertical = 0b10,
-//     vertical_regular = 0b01,
-// };
-
 fn regularLinearEquations(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
-    const first_line = &line1.regular;
-    const second_line = &line2.regular;
+    const first_line = &line1.has_slope;
+    const second_line = &line2.has_slope;
 
     if (@abs(first_line.m - second_line.m) < FLOAT_EQUALITY_THRESHOLD) return null;
 
@@ -90,7 +81,7 @@ fn verticalLinearEquations(_: *const LinearEquation, _: *const LinearEquation) ?
     return null;
 }
 fn regVertLinearEquations(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
-    const first_line = &line1.regular;
+    const first_line = &line1.has_slope;
     const second_line = &line2.vertical;
 
     var point = Point{ .x = 0, .y = 0 };
@@ -179,53 +170,52 @@ test "find linear x and y" {
 }
 
 test "lines intercept1" {
-    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
-    const line2 = LinearEquation{ .regular = .{.m = 0.7, .b = -4} };
+    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .regular = .{ .m = 0.7, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
     try expect(@round(point_intercept.x) == 20 and @round(point_intercept.y) == 10);
 }
 
 test "lines intercept2" {
-    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
-    const line2 = LinearEquation{ .regular = .{.m = 0.5, .b = -4} };
+    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .regular = .{ .m = 0.5, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2);
     try expect(point_intercept == null);
 }
 
 test "lines intercept3" {
-    const line1 = LinearEquation{ .regular = .{.m = 0.7, .b = -4} };
-    const line2 = LinearEquation{ .regular = .{.m = 0.5, .b = -4} };
+    const line1 = LinearEquation{ .regular = .{ .m = 0.7, .b = -4 } };
+    const line2 = LinearEquation{ .regular = .{ .m = 0.5, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
     try expect(@round(point_intercept.x) == 0 and @round(point_intercept.y) == -4);
 }
 
 test "lines intercept4" {
-    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
-    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .vertical = .{ .a = 4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
     try expect(@round(point_intercept.x) == 4 and @round(point_intercept.y) == 2);
 }
 
 test "lines intercept5" {
-    const line1 = LinearEquation{ .regular = .{.m = 0.5, .b = 0} };
-    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .vertical = .{ .a = 4 } };
 
     const point_intercept = lineIntercept(&line2, &line1).?;
     try expect(@round(point_intercept.x) == 4 and @round(point_intercept.y) == 2);
 }
 
 test "lines intercept6" {
-    const line1 = LinearEquation{ .vertical = .{.a = 2} };
-    const line2 = LinearEquation{ .vertical = .{.a = 4} };
+    const line1 = LinearEquation{ .vertical = .{ .a = 2 } };
+    const line2 = LinearEquation{ .vertical = .{ .a = 4 } };
 
     const point_intercept = lineIntercept(&line2, &line1);
     try expect(point_intercept == null);
 }
-
 
 test "getLinearQuationCombCase" {
     const reg_eq = LinearEquation{ .regular = .{ .m = 0, .b = 0 } };
