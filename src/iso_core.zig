@@ -17,6 +17,9 @@ const doesLineInterceptMapBoundries = @import("iso_map.zig").doesLineInterceptMa
 
 const LinearEquation = @import("iso_util.zig").LinearEquation;
 
+
+//TODO:rename Coord to MapArrayCoord and its internals to x and y
+//TODO:rename Point to IsoPoint
 pub const Coord = struct { map_array_coord_x: usize, map_array_coord_y: usize };
 pub const Point = struct { x: f32, y: f32 };
 
@@ -51,17 +54,17 @@ pub const IsometricMathUtility = struct {
         return this;
     }
 
-    pub fn mapCoordToIso(this: *const @This(), map_array_coord_x: usize, map_array_coord_y: usize, map_pos_x: i32, map_pos_y: i32) struct { iso_pix_x: f32, iso_pix_y: f32 } {
+    pub fn mapCoordToIso(this: *const @This(), map_array_coord:Coord, map_pos_x: i32, map_pos_y: i32) struct { iso_pix_x: f32, iso_pix_y: f32 } {
 
-        const iso_pix_x = mapCoordToIsoPixX(@as(f32,@floatFromInt(map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord_y)), this.map_coord_to_iso_inc_x);
-        const iso_pix_y = mapCoordToIsoPixY(@as(f32,@floatFromInt(map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord_y)), this.map_coord_to_iso_inc_y);
+        const iso_pix_x = mapCoordToIsoPixX(@as(f32,@floatFromInt(map_array_coord.map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_x);
+        const iso_pix_y = mapCoordToIsoPixY(@as(f32,@floatFromInt(map_array_coord.map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_y);
 
         return .{ .iso_pix_x = iso_pix_x + @as(f32, @floatFromInt(map_pos_x)), .iso_pix_y = iso_pix_y + @as(f32, @floatFromInt(map_pos_y)) };
     }
 
-    pub fn isoToMapCoord(this: *const @This(), iso_pix_x: i32, iso_pix_y: i32, map_pos_x: i32, map_pos_y: i32) ?struct { map_array_coord_x: usize, map_array_coord_y: usize } {
-        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix_x)) - @as(f32, @floatFromInt(map_pos_x));
-        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix_y)) - @as(f32, @floatFromInt(map_pos_y));
+    pub fn isoToMapCoord(this: *const @This(), iso_pix:Point, map_pos_x: i32, map_pos_y: i32) Coord {
+        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
+        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
 
         const tile_position = tilePosition(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, this.tile_pix_width, this.diamond_pix_height).?;
         const map_array_coord_x = tileIsoOriginPosition(tile_position.tile_origin_iso_x, tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
@@ -70,9 +73,9 @@ pub const IsometricMathUtility = struct {
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
     }
 
-    pub fn isIsoPointOnMap(this:*@This(), iso_pix:Point, map_pos:Point)PointPosition{
-        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos.x));
-        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos.y));
+    pub fn isIsoPointOnMap(this:*@This(), iso_pix:Point, map_pos_x: i32, map_pos_y: i32)PointPosition{
+        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
+        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
         return isPointOnMap(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, &this.map_side_equations);
     }
 
