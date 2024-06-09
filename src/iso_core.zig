@@ -17,10 +17,50 @@ const doesLineInterceptMapBoundries = @import("iso_map.zig").doesLineInterceptMa
 
 const LinearEquation = @import("iso_util.zig").LinearEquation;
 
+const walkMapCoordNorth = @import("iso_tile_walk.zig").walkMapCoordNorth;
+const walkMapCoordNorthEast = @import("iso_tile_walk.zig").walkMapCoordNorthEast;
+const walkMapCoordEast = @import("iso_tile_walk.zig").walkMapCoordEast;
+const walkMapCoordSouthEast = @import("iso_tile_walk.zig").walkMapCoordSouthEast;
+const walkMapCoordSouth = @import("iso_tile_walk.zig").walkMapCoordSouth;
+const walkMapCoordSouthWest = @import("iso_tile_walk.zig").walkMapCoordSouthWest;
+const walkMapCoordWest = @import("iso_tile_walk.zig").walkMapCoordWest;
+const walkMapCoordNorthWest = @import("iso_tile_walk.zig").walkMapCoordNorthWest;
+
+const walkMapCoordFurthestNorth = @import("iso_tile_walk.zig").walkMapCoordFurthestNorth;
+const walkMapCoordFurthestNorthEast = @import("iso_tile_walk.zig").walkMapCoordFurthestNorthEast;
+const walkMapCoordFurthestEast = @import("iso_tile_walk.zig").walkMapCoordFurthestEast;
+const walkMapCoordFurthestSouthEast = @import("iso_tile_walk.zig").walkMapCoordFurthestSouthEast;
+const walkMapCoordFurthestSouth = @import("iso_tile_walk.zig").walkMapCoordFurthestSouth;
+const walkFurthestSouthWest = @import("iso_tile_walk.zig").walkFurthestSouthWest;
+const walkMapCoordFurthestWest = @import("iso_tile_walk.zig").walkMapCoordFurthestWest;
+const walkMapCoordFurthestNorthWest = @import("iso_tile_walk.zig").walkMapCoordFurthestNorthWest;
 
 //TODO:rename Coord to MapArrayCoord and its internals to x and y
 //TODO:rename Point to IsoPoint
-pub const Coord = struct { map_array_coord_x: usize, map_array_coord_y: usize };
+pub const Coord = struct {
+    map_array_coord_x: usize,
+    map_array_coord_y: usize,
+
+    pub fn isEqual(this: *@This(), comp: *Coord) bool {
+        return (this.map_array_coord_x == comp.map_array_coord_x and this.map_array_coord_y == comp.map_array_coord_y);
+    }
+
+    pub fn hasEqualX(this:*@This(), comp:*Coord)bool{
+        return this.map_array_coord_x == comp.map_array_coord_x;
+    }
+
+    pub fn hasEqualY(this:*@This(), comp:*Coord)bool{
+        return this.map_array_coord_y == comp.map_array_coord_y;
+    }
+
+    pub fn hasGreaterX(this:*@This(), comp:*Coord)bool{
+        return this.map_array_coord_x > comp.map_array_coord_x;
+    }
+
+    pub fn hasGreaterY(this:*@This(), comp:*Coord)bool{
+        return this.map_array_coord_y > comp.map_array_coord_y;
+    }
+};
 pub const Point = struct { x: f32, y: f32 };
 
 pub const IsometricMathUtility = struct {
@@ -33,8 +73,10 @@ pub const IsometricMathUtility = struct {
     map_tiles_width: usize,
     map_tiles_height: usize,
 
-    map_dimensions:MapDimensions,
+    map_dimensions: MapDimensions,
     map_side_equations: MapSideEquations,
+
+    const SINGLE_STEP: usize = 1;
 
     pub fn new(tile_pix_width: f32, diamond_pix_height: f32, map_tiles_width: usize, map_tiles_height: usize) @This() {
         var this: @This() = undefined;
@@ -54,15 +96,14 @@ pub const IsometricMathUtility = struct {
         return this;
     }
 
-    pub fn mapCoordToIso(this: *const @This(), map_array_coord:Coord, map_pos_x: i32, map_pos_y: i32) struct { iso_pix_x: f32, iso_pix_y: f32 } {
-
-        const iso_pix_x = mapCoordToIsoPixX(@as(f32,@floatFromInt(map_array_coord.map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_x);
-        const iso_pix_y = mapCoordToIsoPixY(@as(f32,@floatFromInt(map_array_coord.map_array_coord_x)), @as(f32,@floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_y);
+    pub fn mapCoordToIso(this: *const @This(), map_array_coord: Coord, map_pos_x: i32, map_pos_y: i32) struct { iso_pix_x: f32, iso_pix_y: f32 } {
+        const iso_pix_x = mapCoordToIsoPixX(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_x);
+        const iso_pix_y = mapCoordToIsoPixY(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_y);
 
         return .{ .iso_pix_x = iso_pix_x + @as(f32, @floatFromInt(map_pos_x)), .iso_pix_y = iso_pix_y + @as(f32, @floatFromInt(map_pos_y)) };
     }
 
-    pub fn isoToMapCoord(this: *const @This(), iso_pix:Point, map_pos_x: i32, map_pos_y: i32) Coord {
+    pub fn isoToMapCoord(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) Coord {
         const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
         const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
 
@@ -73,16 +114,71 @@ pub const IsometricMathUtility = struct {
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
     }
 
-    pub fn isIsoPointOnMap(this:*@This(), iso_pix:Point, map_pos_x: i32, map_pos_y: i32)PointPosition{
+    pub fn isIsoPointOnMap(this: *@This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) PointPosition {
         const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
         const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
         return isPointOnMap(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, &this.map_side_equations);
     }
 
-    pub fn doesLineInterceptMap(this:*@This(),line:*const LinearEquation, line_start:*const Point, line_end:*const Point, map_pos_x: i32, map_pos_y: i32)MapSideIntercepts{
-        const line_start_map_pos_adj = Point{.x = line_start.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_start.y - @as(f32, @floatFromInt(map_pos_y)) };
-        const line_end_map_pos_adj = Point{.x = line_end.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_end.y - @as(f32, @floatFromInt(map_pos_y)) };
-        return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, line,  &line_start_map_pos_adj, &line_end_map_pos_adj);
+    pub fn doesLineInterceptMap(this: *@This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) MapSideIntercepts {
+        const line_start_map_pos_adj = Point{ .x = line_start.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_start.y - @as(f32, @floatFromInt(map_pos_y)) };
+        const line_end_map_pos_adj = Point{ .x = line_end.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_end.y - @as(f32, @floatFromInt(map_pos_y)) };
+        return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, line, &line_start_map_pos_adj, &line_end_map_pos_adj);
     }
 
+    pub fn walkMapCoordNorthSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordNorth(coord.map_array_coord_x, coord.map_array_coord_y, SINGLE_STEP);
+    }
+    fn walkMapCoordNorthEastSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordNorthEast(coord.map_array_coord_x, coord.map_array_coord_y, SINGLE_STEP);
+    }
+    pub fn walkMapCoordEastSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordEast(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, SINGLE_STEP);
+    }
+    pub fn walkMapCoordSouthEastSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordSouthEast(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, SINGLE_STEP);
+    }
+    pub fn walkMapCoordSouthSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordSouth(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, this.map_tiles_height, SINGLE_STEP);
+    }
+    pub fn walkMapCoordSouthWestSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordSouthWest(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_height, SINGLE_STEP);
+    }
+    pub fn walkMapCoordWestSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordWest(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_height, SINGLE_STEP);
+    }
+    pub fn walkMapCoordNorthWestSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordNorthWest(coord.map_array_coord_x, coord.map_array_coord_y, SINGLE_STEP);
+    }
+
+    pub fn walkMapCoordFullNorthMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordFurthestNorth(coord.map_array_coord_x, coord.map_array_coord_y);
+    }
+    pub fn walkMapCoordFullNorthEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordFurthestNorthEast(coord.map_array_coord_x);
+    }
+    pub fn walkMapCoordFullEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordFurthestEast(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width);
+    }
+    pub fn walkMapCoordFullSouthEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordFurthestSouthEast(coord.map_array_coord_y, this.map_tiles_width);
+    }
+    pub fn walkMapCoordFullSouthMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordFurthestSouth(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, this.map_tiles_height);
+    }
+    pub fn walkFullSouthWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkFurthestSouthWest(coord.map_array_coord_x, this.map_tiles_height);
+    }
+    pub fn walkMapCoordFullWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+        return walkMapCoordFurthestWest(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_height);
+    }
+    pub fn walkMapCoordFullNorthWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+        _ = this;
+        return walkMapCoordFurthestNorthWest(coord.map_array_coord_y);
+    }
 };

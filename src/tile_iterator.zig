@@ -3,19 +3,9 @@ const std = @import("std");
 const Coord = @import("iso_core.zig").Coord;
 const Point = @import("iso_core.zig").Point;
 
-const walkMapCoordNorth = @import("iso_tile_walk.zig").walkMapCoordNorth;
-const walkMapCoordEast = @import("iso_tile_walk.zig").walkMapCoordEast;
-const walkMapCoordSouth = @import("iso_tile_walk.zig").walkMapCoordSouth;
-const walkMapCoordWest = @import("iso_tile_walk.zig").walkMapCoordWest;
-const walkMapCoordFurthestNorth = @import("iso_tile_walk.zig").walkMapCoordFurthestNorth;
-const walkMapCoordFurthestEast = @import("iso_tile_walk.zig").walkMapCoordFurthestEast;
-const walkMapCoordFurthestSouth = @import("iso_tile_walk.zig").walkMapCoordFurthestSouth;
-const walkMapCoordFurthestWest = @import("iso_tile_walk.zig").walkMapCoordFurthestWest;
-
 const PointPosition = @import("iso_map.zig").PointPosition;
 
 const IsometricMathUtility = @import("iso_core.zig").IsometricMathUtility;
-
 
 const WindowMapPositions = struct {
     upper_left: PointPosition,
@@ -24,7 +14,7 @@ const WindowMapPositions = struct {
     bottom_left: PointPosition,
 };
 
-const WindowCornerPoints = struct{
+const WindowCornerPoints = struct {
     upper_left: Point,
     upper_right: Point,
     bottom_right: Point,
@@ -44,9 +34,9 @@ pub const TileIterator = struct {
     window_pix_width: i32,
     window_pix_height: i32,
 
-   window_corner_points:WindowCornerPoints,
+    window_corner_points: WindowCornerPoints,
 
-   case_handler:CaseHandler = undefined,
+    case_handler: CaseHandler = undefined,
 
     pub fn new(
         window_pix_width: i32,
@@ -54,7 +44,6 @@ pub const TileIterator = struct {
         isometric_math_utility: IsometricMathUtility,
         margin: usize,
     ) @This() {
-
         const this_window_corner_points = WindowCornerPoints{
             .upper_left = .{ .x = 0, .y = 0 },
             .upper_right = .{ .x = @floatFromInt(window_pix_width), .y = 0 },
@@ -71,31 +60,48 @@ pub const TileIterator = struct {
         };
     }
 
-//TODO:make a struct from map_position_x and y
+    //TODO:make a struct from map_position_x and y
     pub fn initialize(this: *@This(), map_position_x: i32, map_position_y: i32) void {
+        const window_map_positions = WindowMapPositions{
+            .upper_left = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_left, Point{ .x = map_position_x, .y = map_position_y }),
+            .upper_right = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_right, Point{ .x = map_position_x, .y = map_position_y }),
+            .bottom_right = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_right, Point{ .x = map_position_x, .y = map_position_y }),
+            .bottom_left = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_left, Point{ .x = map_position_x, .y = map_position_y }),
+        };
 
-        const window_map_positions = WindowMapPositions{ 
-                .upper_left = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_left, Point{ .x = map_position_x, .y = map_position_y }),
-                .upper_right = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_right, Point{ .x = map_position_x, .y = map_position_y }),
-                .bottom_right = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_right, Point{ .x = map_position_x, .y = map_position_y }),
-                .bottom_left = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_left, Point{ .x = map_position_x, .y = map_position_y }),
-             };
-
-        this.case_handler = CaseHandler.getCaseHandler(&this.isometric_math_utility, &window_map_positions, map_position_x, map_position_y);
+        this.case_handler = CaseHandler.new(&this.isometric_math_utility, &window_map_positions, map_position_x, map_position_y);
     }
 
-    pub fn nextTile(this:*@This())?Coord{
-       return this.case_handler.get_next_tile_coord();     
+    pub fn nextTile(this: *@This()) ?Coord {
+        return this.case_handler.get_next_tile_coord();
     }
 };
 
 const CaseHandler = struct {
-    const InitFn = *const fn (this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void;
-    const NextTileCoordFn = *const fn (this: *@This()) ?Coord;
+    const InitFn = *const fn (this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void;
+    const NextTileCoordFn = *const fn (this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord;
 
     const Data = union(enum) {
-        all_points: struct {upper_left:Coord = undefined, upper_right:Coord = undefined, bottom_right:Coord = undefined, bottom_left:Coord = undefined},
-        upperleft_upperright_bottomright: struct {},
+        all_points: struct {
+            upper_left: Coord = undefined,
+            upper_right: Coord = undefined,
+            bottom_left: Coord = undefined,
+
+            row_begin: Coord = undefined,
+            row_end: Coord = undefined,
+
+            has_reached_upper_left_corner: bool = false,
+        },
+        upperleft_upperright_bottomright: struct {
+            upper_left: Coord = undefined,
+            upper_right: Coord = undefined,
+            bottom_left: Coord = undefined,
+
+            row_begin: Coord = undefined,
+            row_end: Coord = undefined,
+
+            has_reached_upper_left_corner: bool = false,
+        },
         upperright_bottomright_bottomleft: struct {},
         bottomright_bottomleft_upperleft: struct {},
         bottomleft_upperleft_upperright: struct {},
@@ -113,7 +119,7 @@ const CaseHandler = struct {
     init: InitFn,
     get_next_tile_coord: NextTileCoordFn,
     data: Data,
-    isometric_math_utility: IsometricMathUtility,
+    current_coord: ?Coord = null,
 
     const CaseHandlerList = [NUM_OF_CASES]CaseHandler;
     const NUM_OF_CASES: usize = 14;
@@ -139,13 +145,13 @@ const CaseHandler = struct {
     }
 
     fn windowOnMapFromBool(upper_left: bool, upper_right: bool, bottom_right: bool, bottom_left: bool) WindowOnMap {
-    return .{
-        .upper_left = upper_left,
-        .upper_right = upper_right,
-        .bottom_right = bottom_right,
-        .bottom_left = bottom_left,
-    };
-}
+        return .{
+            .upper_left = upper_left,
+            .upper_right = upper_right,
+            .bottom_right = bottom_right,
+            .bottom_left = bottom_left,
+        };
+    }
 
     fn detectCase(window_on_map: *const WindowOnMap) u4 {
         var constructed_enum_int: u4 = 0b0000;
@@ -169,24 +175,24 @@ const CaseHandler = struct {
     }
 
     const WindowOnMap = struct {
-    upper_left: bool,
-    upper_right: bool,
-    bottom_right: bool,
-    bottom_left: bool,
-};
+        upper_left: bool,
+        upper_right: bool,
+        bottom_right: bool,
+        bottom_left: bool,
+    };
 
     fn windowOnMapFromWinMapPoints(window_map_point: *WindowMapPositions) WindowOnMap {
-    return .{
-        .upper_left = window_map_point.upper_left == .on_map,
-        .upper_right = window_map_point.upper_right == .on_map,
-        .bottom_right = window_map_point.bottom_right == .on_map,
-        .bottom_left = window_map_point.bottom_left == .on_map,
-    };
-}
+        return .{
+            .upper_left = window_map_point.upper_left == .on_map,
+            .upper_right = window_map_point.upper_right == .on_map,
+            .bottom_right = window_map_point.bottom_right == .on_map,
+            .bottom_left = window_map_point.bottom_left == .on_map,
+        };
+    }
 
     const case_handler_list = createCaseHandlerDeterminationFunctionTab();
 
-    pub fn getCaseHandler(isometric_math_utility: *const IsometricMathUtility, window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32) @This() {
+    pub fn new(isometric_math_utility: *const IsometricMathUtility, window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32) @This() {
         const window_on_map = windowOnMapFromWinMapPoints(window_map_positions);
         const idx = detectCase(window_on_map);
         var case_handler = case_handler_list[idx];
@@ -195,8 +201,26 @@ const CaseHandler = struct {
         return case_handler;
     }
 
-    fn initAllPoints(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.data.all_points;
+    fn initAllPoints(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.data.all_points;
+        _ = window_map_positions;
+
+        this_data.upper_left = isometric_math_utility.isoToMapCoord(window_corner_points.upper_left, map_position_x, map_position_y);
+        this_data.upper_right = isometric_math_utility.isoToMapCoord(window_corner_points.upper_right, map_position_x, map_position_y);
+        this_data.bottom_left = isometric_math_utility.isoToMapCoord(window_corner_points.bottom_left, map_position_x, map_position_y);
+    }
+    fn initUpperLeftUpperRightBottomRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperleft_upperright_bottomright;
+        _ = window_map_positions;
+
+        this_data.upper_left = isometric_math_utility.isoToMapCoord(window_corner_points.upper_left, map_position_x, map_position_y);
+        this_data.upper_right = isometric_math_utility.isoToMapCoord(window_corner_points.upper_right, map_position_x, map_position_y);
+        this_data.bottom_left = isometric_math_utility.isoToMapCoord(window_corner_points.bottom_left, map_position_x, map_position_y);
+
+        return undefined;
+    }
+    fn initUpperRightBottomRightBottomLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperright_bottomright_bottomleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -205,19 +229,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initUpperLeftUpperRightBottomRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperleft_upperright_bottomright;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = this_data;
-        _ = map_position_x;
-        _ = map_position_y;
-        _ = window_map_positions;
-        return undefined;
-    }
-    fn initUpperRightBottomRightBottomLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperright_bottomright_bottomleft;
+    fn initBottomRightBottomLeftUpperLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomright_bottomleft_upperleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -226,8 +239,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomRightBottomLeftUpperLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomright_bottomleft_upperleft;
+    fn initBottomLeftUpperLeftUpperRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomleft_upperleft_upperright;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -236,8 +249,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomLeftUpperLeftUpperRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomleft_upperleft_upperright;
+    fn initUpperLeftUpperRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperleft_upperright;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -246,8 +259,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initUpperLeftUpperRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperleft_upperright;
+    fn initUpperRightBottomRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperright_bottomright;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -256,8 +269,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initUpperRightBottomRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperright_bottomright;
+    fn initBottomRightBottomLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomright_bottomleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -266,8 +279,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomRightBottomLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomright_bottomleft;
+    fn initBottomLeftUpperLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomleft_upperleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -276,8 +289,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomLeftUpperLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomleft_upperleft;
+    fn initUpperLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -286,8 +299,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initUpperLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperleft;
+    fn initUpperRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.upperright;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -296,8 +309,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initUpperRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.upperright;
+    fn initBottomRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomright;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -306,8 +319,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomRight(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomright;
+    fn initBottomLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.bottomleft;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -316,18 +329,8 @@ const CaseHandler = struct {
         _ = window_map_positions;
         return undefined;
     }
-    fn initBottomLeft(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.bottomleft;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = map_position_x;
-        _ = map_position_y;
-        _ = window_map_positions;
-        return undefined;
-    }
-    fn initNone(this: *@This(), window_corner_points:*WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
-        const this_data = &this.none;
+    fn initNone(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
+        const this_data = &this.data.none;
         _ = this_data;
         _ = isometric_math_utility;
         _ = window_corner_points;
@@ -337,74 +340,143 @@ const CaseHandler = struct {
         return undefined;
     }
 
-    fn handleAllPoints(this: *@This()) ?Coord {
-        const this_data = &this.all_points;
+    fn handleAllPoints(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.all_points;
+
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) { //reached the bottom
+
+                switch (this_data.has_reached_upper_left_corner) {
+                    false => {
+                        this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                        this_data.has_reached_upper_left_corner = this.current_coord.?.hasEqualYCoordinate(&this_data.upper_left);
+                    },
+                    true => {
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                        if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null; //the end of the screen reached
+
+                        this.current_coord = this_data.row_begin;
+
+                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                    },
+                }
+            } else { // havent reached the bottom, good to step one tile down
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        } else { // first iteration
+            this_data.row_begin = this_data.upper_right;
+            this_data.row_end = this_data.upper_right;
+            this.current_coord = this_data.upper_right;
+        }
+
+        return this.current_coord;
+    }
+    fn handleUpperLeftUpperRightBottomRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperleft_upperright_bottomright;
+
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
+                switch (this_data.has_reached_upper_left_corner) {
+                    false => {
+                        this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                        this_data.has_reached_upper_left_corner = this.current_coord.?.hasEqualYCoordinate(&this_data.upper_left);
+                    },
+                    true => {
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null; //if null is returned, the end of the map was reached
+                        this.current_coord = this_data.row_begin;
+
+                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                    },
+                }
+            } else {
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        } else {
+            this_data.row_begin = this_data.upper_right;
+            this_data.row_end = this_data.upper_right;
+            this.current_coord = this_data.upper_right;
+        }
+
+        return this.current_coord;
+    }
+    fn handleUpperRightBottomRightBottomLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperright_bottomright_bottomleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperLeftUpperRightBottomRight(this: *@This()) ?Coord {
-        const this_data = &this.upperleft_upperright_bottomright;
+    fn handleBottomRightBottomLeftUpperLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomright_bottomleft_upperleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperRightBottomRightBottomLeft(this: *@This()) ?Coord {
-        const this_data = &this.upperright_bottomright_bottomleft;
+    fn handleBottomLeftUpperLeftUpperRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomleft_upperleft_upperright;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleBottomRightBottomLeftUpperLeft(this: *@This()) ?Coord {
-        const this_data = &this.bottomright_bottomleft_upperleft;
+    fn handleUpperLeftUpperRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperleft_upperright;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleBottomLeftUpperLeftUpperRight(this: *@This()) ?Coord {
-        const this_data = &this.bottomleft_upperleft_upperright;
+    fn handleUpperRightBottomRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperright_bottomright;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperLeftUpperRight(this: *@This()) ?Coord {
-        const this_data = &this.upperleft_upperright;
+    fn handleBottomRightBottomLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomright_bottomleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperRightBottomRight(this: *@This()) ?Coord {
-        const this_data = &this.upperright_bottomright;
+    fn handleBottomLeftUpperLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomleft_upperleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleBottomRightBottomLeft(this: *@This()) ?Coord {
-        const this_data = &this.bottomright_bottomleft;
+    fn handleUpperLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleBottomLeftUpperLeft(this: *@This()) ?Coord {
-        const this_data = &this.bottomleft_upperleft;
+    fn handleUpperRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.upperright;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperLeft(this: *@This()) ?Coord {
-        const this_data = &this.upperleft;
+    fn handleBottomRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomright;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleUpperRight(this: *@This()) ?Coord {
-        const this_data = &this.upperright;
+    fn handleBottomLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.bottomleft;
         _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
-    fn handleBottomRight(this: *@This()) ?Coord {
-        const this_data = &this.bottomright;
+    fn handleNone(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
+        const this_data = &this.data.none;
         _ = this_data;
-        return undefined;
-    }
-    fn handleBottomLeft(this: *@This()) ?Coord {
-        const this_data = &this.bottomleft;
-        _ = this_data;
-        return undefined;
-    }
-    fn handleNone(this: *@This()) ?Coord {
-        const this_data = &this.none;
-        _ = this_data;
+        _ = isometric_math_utility;
         return undefined;
     }
 };
