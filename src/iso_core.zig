@@ -95,7 +95,7 @@ pub const IsometricMathUtility = struct {
 
         return this;
     }
-
+    //TODO:rename to mapCoordToIsoPointOrigin, new return value = Point
     pub fn mapCoordToIso(this: *const @This(), map_array_coord: Coord, map_pos_x: i32, map_pos_y: i32) struct { iso_pix_x: f32, iso_pix_y: f32 } {
         const iso_pix_x = mapCoordToIsoPixX(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_x);
         const iso_pix_y = mapCoordToIsoPixY(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_y);
@@ -103,9 +103,10 @@ pub const IsometricMathUtility = struct {
         return .{ .iso_pix_x = iso_pix_x + @as(f32, @floatFromInt(map_pos_x)), .iso_pix_y = iso_pix_y + @as(f32, @floatFromInt(map_pos_y)) };
     }
 
-    pub fn isoToMapCoord(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) Coord {
-        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
-        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
+    //TODO:rename to isoPointToMapCoord, instead of returning null, return an error -> a map array coord can in no way be negative
+    pub fn isoToMapCoord(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) ?Coord {
+        const iso_pix_x_map_pos_adj: f32 = iso_pix.x - @as(f32, @floatFromInt(map_pos_x));
+        const iso_pix_y_map_pos_adj: f32 = iso_pix.y - @as(f32, @floatFromInt(map_pos_y));
 
         const tile_position = tilePosition(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, this.tile_pix_width, this.diamond_pix_height).?;
         const map_array_coord_x = tileIsoOriginPosition(tile_position.tile_origin_iso_x, tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
@@ -154,31 +155,31 @@ pub const IsometricMathUtility = struct {
         return walkMapCoordNorthWest(coord.map_array_coord_x, coord.map_array_coord_y, SINGLE_STEP);
     }
 
-    pub fn walkMapCoordFullNorthMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullNorth(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
         return walkMapCoordFurthestNorth(coord.map_array_coord_x, coord.map_array_coord_y);
     }
-    pub fn walkMapCoordFullNorthEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullNorthEast(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
         return walkMapCoordFurthestNorthEast(coord.map_array_coord_x);
     }
-    pub fn walkMapCoordFullEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullEast(this: *const @This(), coord: *const Coord) Coord {
         return walkMapCoordFurthestEast(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width);
     }
-    pub fn walkMapCoordFullSouthEastMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullSouthEast(this: *const @This(), coord: *const Coord) Coord {
         return walkMapCoordFurthestSouthEast(coord.map_array_coord_y, this.map_tiles_width);
     }
-    pub fn walkMapCoordFullSouthMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullSouth(this: *const @This(), coord: *const Coord) Coord {
         return walkMapCoordFurthestSouth(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, this.map_tiles_height);
     }
-    pub fn walkFullSouthWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkFullSouthWest(this: *const @This(), coord: *const Coord) Coord {
         return walkFurthestSouthWest(coord.map_array_coord_x, this.map_tiles_height);
     }
-    pub fn walkMapCoordFullWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullWest(this: *const @This(), coord: *const Coord) Coord {
         return walkMapCoordFurthestWest(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_height);
     }
-    pub fn walkMapCoordFullNorthWestMove(this: *const @This(), coord: *const Coord) ?Coord {
+    pub fn walkMapCoordFullNorthWest(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
-        return walkMapCoordFurthestNorthWest(coord.map_array_coord_y);
+        return walkMapCoordFurthestNorth(coord.map_array_coord_y);
     }
 };

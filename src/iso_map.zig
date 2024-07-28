@@ -47,10 +47,10 @@ pub const MapSideEquations = struct {
 //Converts the four points of an isometric diamond-shaped map into four linear equations that outline its boundaries
 pub fn mapSideEquations(map_dimensions: *const MapDimensions) MapSideEquations {
     var map_side_equations: MapSideEquations = .{
-        .upper_right = .{ .regular = undefined },
-        .bottom_right = .{ .regular = undefined },
-        .bottom_left = .{ .regular = undefined },
-        .upper_left = .{ .regular = undefined },
+        .upper_right = .{ .has_slope = undefined },
+        .bottom_right = .{ .has_slope = undefined },
+        .bottom_left = .{ .has_slope  = undefined },
+        .upper_left = .{ .has_slope   = undefined },
     };
 
     map_side_equations.upper_right.has_slope.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
@@ -80,6 +80,17 @@ const MapBoundries = struct {
 };
 
 //Calculates a map's boundaries for all four sides along the x and y axes, given a point and the linear equations for each side of the map
+//in other words: the point where a point and the boundries of a map would meet if the point was moved towards the map either ont he x or the y axis
+//ilustration: meeting points only depicted if the Point(X) was moved on the x axis (bl = bottom left, ul = upper left, ur = upper right, br = bottom right)
+//                    *
+//                  *   *
+// X     o(bl)    o(ul)   o(ur)  o(br)
+//              *           *
+//            *               *
+//              *           *
+//                *       *
+//                  *   *
+//                    *
 fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) MapBoundries {
     var map_boundries: MapBoundries = undefined;
     const mse = map_side_equations;
@@ -101,8 +112,8 @@ fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Map
 
 // Determines whether a given point is on a map or out of bounds.
 // If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds,
-// as well as the coordinates on the boundary if the point was moved towards the map's inbounds.
-const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
+// as well as the coordinates on the boundary, if the point were to be moved towards the map's inbounds.
+pub const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
 const BoundrySpot = struct { spot: Point, boundry_violation: Boundry };
 pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundrySpot };
 pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
@@ -249,7 +260,7 @@ test "line intercept boundry" {
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_side_equations = mapSideEquations(&map_dimensions);
 
-    var line = LinearEquation{ .regular = .{ .m = 0, .b = 2 } };
+    var line = LinearEquation{ .has_slope = .{ .m = 0, .b = 2 } };
     var line_start = Point{ .x = -4, .y = 2 };
     var line_end = Point{ .x = 12, .y = 2 };
     var result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -258,7 +269,7 @@ test "line intercept boundry" {
     try expect(result.bottom_left == .no);
     try expect(result.upper_left.yes.x == 0 and result.upper_left.yes.y == 2);
 
-    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 } };
+    line = LinearEquation{ .has_slope  = .{ .m = 0, .b = 9 } };
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 8, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -267,7 +278,13 @@ test "line intercept boundry" {
     try expect(result.bottom_left.yes.x == 6 and result.bottom_left.yes.y == 9);
     try expect(result.upper_left == .no);
 
-    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 } };
+    //TODO: use this test to test iso_core: it should be possible to translate the iso Point
+    //coming from an intercept to a map array Coordinate
+    const isometric_math_utility = @import("iso_core.zig").IsometricMathUtility.new(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height);
+    const point_to_coord = isometric_math_utility.isoToMapCoord(Point{.x = result.bottom_left.yes.x, .y = result.bottom_left.yes.y}, 0, 0).?;
+    _ = point_to_coord;
+
+    line = LinearEquation{ .has_slope = .{ .m = 0, .b = 9 } };
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 16, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -276,7 +293,7 @@ test "line intercept boundry" {
     try expect(result.bottom_left.yes.x == 6 and result.bottom_left.yes.y == 9);
     try expect(result.upper_left == .no);
 
-    line = LinearEquation{ .regular = .{ .m = 0, .b = 9 } };
+    line = LinearEquation{ .has_slope = .{ .m = 0, .b = 9 } };
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 16, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
