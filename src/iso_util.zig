@@ -170,31 +170,31 @@ test "find linear x and y" {
 }
 
 test "lines intercept1" {
-    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
-    const line2 = LinearEquation{ .regular = .{ .m = 0.7, .b = -4 } };
+    const line1 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .has_slope = .{ .m = 0.7, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
     try expect(@round(point_intercept.x) == 20 and @round(point_intercept.y) == 10);
 }
 
 test "lines intercept2" {
-    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
-    const line2 = LinearEquation{ .regular = .{ .m = 0.5, .b = -4 } };
+    const line1 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = 0 } };
+    const line2 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2);
     try expect(point_intercept == null);
 }
 
 test "lines intercept3" {
-    const line1 = LinearEquation{ .regular = .{ .m = 0.7, .b = -4 } };
-    const line2 = LinearEquation{ .regular = .{ .m = 0.5, .b = -4 } };
+    const line1 = LinearEquation{ .has_slope = .{ .m = 0.7, .b = -4 } };
+    const line2 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = -4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
     try expect(@round(point_intercept.x) == 0 and @round(point_intercept.y) == -4);
 }
 
 test "lines intercept4" {
-    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line1 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = 0 } };
     const line2 = LinearEquation{ .vertical = .{ .a = 4 } };
 
     const point_intercept = lineIntercept(&line1, &line2).?;
@@ -202,7 +202,7 @@ test "lines intercept4" {
 }
 
 test "lines intercept5" {
-    const line1 = LinearEquation{ .regular = .{ .m = 0.5, .b = 0 } };
+    const line1 = LinearEquation{ .has_slope = .{ .m = 0.5, .b = 0 } };
     const line2 = LinearEquation{ .vertical = .{ .a = 4 } };
 
     const point_intercept = lineIntercept(&line2, &line1).?;
@@ -218,7 +218,7 @@ test "lines intercept6" {
 }
 
 test "getLinearQuationCombCase" {
-    const reg_eq = LinearEquation{ .regular = .{ .m = 0, .b = 0 } };
+    const reg_eq = LinearEquation{ .has_slope = .{ .m = 0, .b = 0 } };
     const vert_eq = LinearEquation{ .vertical = .{ .a = 0 } };
 
     var result = getLinearEquationCombCase(&reg_eq, &reg_eq);
