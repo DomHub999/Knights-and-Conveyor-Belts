@@ -300,7 +300,6 @@ const CaseHandler = struct {
 
                     has_row_begin_reached_upper_left: bool = false,
 
-                    has_row_end_reached_most_right: bool = false,
                     hase_row_end_reached_map_boundry_bottom: bool = false,
                 },
                 bottom_side: struct {
@@ -1229,6 +1228,10 @@ const CaseHandler = struct {
                         }
 
                         //ROW END
+                        if (center_leftside_map_intercept.has_row_end_reached_bottom_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+
                         if (!center_leftside_map_intercept.has_row_end_reached_bottom_right) {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
 
@@ -1435,16 +1438,131 @@ const CaseHandler = struct {
             if (this_data.row_begin.hasEqualX(&this_data.row_end)) {
                 switch (this_data.window_map_side_case) {
                     .upper_side => |upper_side| {
-                        _ = upper_side;
+                        
+                        //ROW BEGIN
+                        if (upper_side.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //END OF SCREEN
+                            if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+                        }
+
+                        if (!upper_side.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            upper_side.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end);
                     },
                     .center => |center| {
-                        _ = center;
+                        
+                        //ROW BEGIN
+                        if (center.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //END OF SCREEN
+                            if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+                        }
+
+                        if (!center.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;    
+
+                            //CORNER REACHED
+                            center.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+
+                        //ROW END
+                        if (center.hase_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+
+                        if (!center.hase_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            center.hase_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&center.bottom_window_map_boundry);    
+                        }
                     },
                     .bottom_side => |bottom_side| {
-                        _ = bottom_side;
+                        
+                        //ROW BEGIN
+                        if (bottom_side.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //END OF SCREEN 
+                            //TODO: check if the use of hasGreaterX function is correct. There might be the nid of a hasLowerX   
+                            if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+                        }
+
+
+                        if (!bottom_side.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord  = this_data.row_begin;    
+
+                            //CORNER REACHED
+                            bottom_side.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+
+                        //ROW END
+                        if (bottom_side.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+
+                        if (!bottom_side.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            bottom_side.has_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&bottom_side.bottom_window_map_boundry);
+                        }
                     },
                     .center_rightside_map_intercept => |center_rightside_map_intercept| {
-                        _ = center_rightside_map_intercept;
+                        //ROW BEGIN
+                        if (center_rightside_map_intercept.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //END OF SCREEN            
+                            if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+
+                        }
+
+                        if (!center_rightside_map_intercept.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin);
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            center_rightside_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+                        //ROW END
+
+                        if (center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+
+                        }
+
+                        if (center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and !center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+
+                            //CORNER REACHED
+                            center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&center_rightside_map_intercept.bottom_window_map_boundry);
+
+                        }
+
+
+                        if (!center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and !center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom = this_data.row_end.hasEqualX(&center_rightside_map_intercept.right_window_bottom_map_intercept);    
+
+                        }
                     },
                 }
             } else {
@@ -1455,16 +1573,24 @@ const CaseHandler = struct {
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
                 .upper_side => |upper_side| {
-                    _ = upper_side;
+                    this_data.row_begin = upper_side.upper_window_map_boundry;
+                    this_data.row_end = upper_side.bottom_window_map_boundry;
+                    this.current_coord = upper_side.upper_window_map_boundry;
                 },
                 .center => |center| {
-                    _ = center;
+                    this_data.row_begin = center.upper_window_map_boundry;
+                    this_data.row_end = center.most_right;
+                    this.current_coord = center.upper_window_map_boundry;
                 },
                 .bottom_side => |bottom_side| {
-                    _ = bottom_side;
+                    this_data.row_begin = bottom_side.upper_window_map_boundry;
+                    this_data.row_end = bottom_side.upper_window_map_boundry;
+                    this.current_coord = bottom_side.upper_window_map_boundry;
                 },
                 .center_rightside_map_intercept => |center_rightside_map_intercept| {
-                    _ = center_rightside_map_intercept;
+                    this_data.row_begin = center_rightside_map_intercept.upper_window_map_boundry;
+                    this_data.row_end = center_rightside_map_intercept.right_window_upper_map_intercept;
+                    this.current_coord = center_rightside_map_intercept.upper_window_map_boundry;
                 },
             }
         }
