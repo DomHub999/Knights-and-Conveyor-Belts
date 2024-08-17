@@ -157,11 +157,8 @@ const CaseHandler = struct {
         },
 
         upperleft_upperright: struct {
-            const WindowMapSideCase = union(enum) { 
-                bottom_left: struct {
-
+            const WindowMapSideCase = union(enum) { bottom_left: struct {
                 has_row_begin_reached_upper_left: bool = false,
-
             }, center: struct {
                 right_window_map_boundry: Coord,
 
@@ -332,10 +329,113 @@ const CaseHandler = struct {
 
             window_map_side_case: WindowMapSideCase,
         },
-        upperleft: struct {},
-        upperright: struct {},
-        bottomright: struct {},
-        bottomleft: struct {},
+        upperleft: struct {
+            const WindowMapSideCase = union(enum) {
+                intercepts_upper_right: struct {
+                    upper_window_map_boundry: Coord,
+                    most_right: Coord,
+
+                    has_row_begin_reached_upper_left: bool = false,
+                },
+                bottom_right: struct {
+                    upper_window_map_boundry: Coord,
+
+                    has_row_begin_reached_upper_left: bool = false,
+                },
+
+                intercepts_bottom_left: struct {
+                    upper_window_map_boundry: Coord,
+
+                    has_row_begin_reached_upper_left: bool = false,
+                },
+            };
+
+            upper_left: Coord,
+
+            row_begin: Coord,
+            row_end: Coord,
+
+            window_map_side_case: WindowMapSideCase,
+        },
+        upperright: struct {
+            const WindowMapSideCase = union(enum) {
+                intercepts_upper_left: struct {
+                    upper_window_map_boundry: Coord,
+
+                    has_row_begin_reached_map_boundry_upper: bool = false,
+                },
+                bottom_left: struct {},
+                intercepts_bottom_right: struct {
+                    right_window_map_boundry: Coord,
+
+                    has_row_end_reached_map_boundry_right: bool = false,
+                },
+            };
+
+            upper_right: Coord,
+
+            row_begin: Coord,
+            row_end: Coord,
+
+            window_map_side_case: WindowMapSideCase,
+        },
+        bottomright: struct {
+            const WindowMapsSideCase = union(enum) {
+                intercepts_upper_right: struct {
+                    right_window_map_boundry: Coord,
+                    most_top: Coord,
+
+                    has_row_end_reached_bottom_right: bool = false,
+                },
+                upper_left: struct {
+                    right_window_map_boundry: Coord,
+                    bottom_window_map_boundry: Coord,
+
+                    has_row_end_reached_bottom_right: bool = false,
+                },
+                intercepts_bottom_left: struct {
+                    right_window_map_boundry: Coord,
+
+                    has_row_end_reached_map_boundry_bottom: bool = false,
+                },
+            };
+            bottom_right: Coord,
+
+            row_begin: Coord,
+            row_end: Coord,
+
+            window_map_side_case: WindowMapsSideCase,
+        },
+        bottomleft: struct {
+            const WindowMapSideCase = union(enum) {
+                intercepts_upper_left: struct {
+                    left_window_map_boundry: Coord,
+                    most_top: Coord,
+                    bottom_window_map_boundry: Coord,
+
+                    has_row_begin_reached_map_boundry_left: bool = false,
+                },
+                upper_right: struct {
+                    //TODO: allign naming, Intercept/Boundry etc
+                    left_window_map_boundry: Coord,
+                    bottom_window_map_boundry: Coord,
+                },
+                intercepts_bottom_right: struct {
+                    left_window_map_boundry: Coord,
+                    most_right: Coord,
+                    bottom_window_map_boundry: Coord,
+
+                    has_row_end_reached_map_boundry_bottom: bool = false,
+                },
+            };
+
+            bottom_left: Coord,
+
+            row_begin: Coord,
+            row_end: Coord,
+
+            window_map_side_case: WindowMapSideCase,
+        },
         //TODO: case where the map is smaller than the entire screen
         none: struct {},
     };
@@ -603,8 +703,9 @@ const CaseHandler = struct {
     fn initBottomLeftUpperLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.bottomleft_upperleft;
 
-        this_data.upper_left = isometric_math_utility.isoToMapCoord(.{ .x = window_corner_points.upper_left.x, .y = window_corner_points.upper_left.y }, map_position_x, map_position_y);
-        this_data.bottom_left = isometric_math_utility.isoToMapCoord(.{ .x = window_corner_points.bottom_left.x, .y = window_corner_points.bottom_left.y }, map_position_x, map_position_y);
+        //TODO: the isoeToMapCoord function returns an optional, unwrap all optionals
+        this_data.upper_left = isometric_math_utility.isoToMapCoord(.{ .x = window_corner_points.upper_left.x, .y = window_corner_points.upper_left.y }, map_position_x, map_position_y).?;
+        this_data.bottom_left = isometric_math_utility.isoToMapCoord(.{ .x = window_corner_points.bottom_left.x, .y = window_corner_points.bottom_left.y }, map_position_x, map_position_y).?;
 
         const linear_eq_right_win = LinearEquation{ .vertical = .{ .a = window_corner_points.upper_right.x } };
         const map_side_intercepts_right_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_right_win, &window_corner_points.upper_right, &window_corner_points.bottom_right, map_position_x, map_position_y);
@@ -645,39 +746,147 @@ const CaseHandler = struct {
     }
     fn initUpperLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.upperleft;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = map_position_x;
-        _ = map_position_y;
         _ = window_map_positions;
+
+        //TODO: remove the inline creations of Points and use the Point that is given in the window_corner_point struct
+        this_data.upper_left = isometric_math_utility.isoToMapCoord(window_corner_points.upper_left, map_position_x, map_position_y).?;
+
+        const linear_eq_top_win = LinearEquation{ .has_slope = .{ .m = 0, .b = window_corner_points.upper_left.y } };
+        const map_side_intercept_upper_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_top_win, &window_corner_points.upper_left, &window_corner_points.upper_right, map_position_x, map_position_y);
+
+        const linear_eq_left_win = LinearEquation{ .vertical = .{ .a = window_corner_points.upper_left.x } };
+        const map_side_intercept_left_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_left_win, &window_corner_points.upper_left, &window_corner_points.bottom_left, map_position_x, map_position_y);
+
+        //intercepts upper right
+        if (map_side_intercept_upper_win.upper_right == .yes) {
+            const upper_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.upper_left);
+
+            this_data.window_map_side_case = .{ .intercepts_upper_right = .{
+                .upper_window_map_boundry = upper_window_map_boundry,
+                .most_right = isometric_math_utility.walkMapCoordFullSouthEast(&upper_window_map_boundry),
+            } };
+            return;
+            //intercepts bottom_left
+        } else if (map_side_intercept_left_win.bottom_left == .yes) {
+            this_data.window_map_side_case = .{ .intercepts_bottom_left = .{
+                .upper_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.upper_left),
+            } };
+            return;
+            //bottom right
+        } else {
+            this_data.window_map_side_case = .{ .bottom_right = .{
+                .upper_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.upper_left),
+            } };
+            return;
+        }
     }
     fn initUpperRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.upperright;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = map_position_x;
-        _ = map_position_y;
         _ = window_map_positions;
+
+        this_data.upper_right = isometric_math_utility.isoToMapCoord(window_corner_points.upper_right, map_position_x, map_position_y);
+
+        const linear_eq_top_win = LinearEquation{ .has_slope = .{ .m = 0, .b = window_corner_points.upper_left.y } };
+        const map_side_intercept_upper_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_top_win, &window_corner_points.upper_left, &window_corner_points.upper_right, map_position_x, map_position_y);
+
+        const linear_eq_right_win = LinearEquation{ .vertical = .{ .a = window_corner_points.upper_right.x } };
+        const map_side_intercept_right_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_right_win, &window_corner_points.upper_right, &window_corner_points.bottom_right, map_position_x, map_position_y);
+
+        //itercepts upper left
+        if (map_side_intercept_upper_win.upper_left == .yes) {
+            this_data.window_map_side_case = .{ .intercepts_upper_left = .{
+                .upper_window_map_boundry = isometric_math_utility.walkMapCoordFullWest(&this_data.upper_right),
+            } };
+            return;
+            //intercepts bottom right
+        } else if (map_side_intercept_right_win.bottom_right == .yes) {
+            this_data.window_map_side_case = .{ .intercepts_bottom_right = .{
+                .right_window_map_boundry = isometric_math_utility.walkMapCoordFullSouth(&this_data.upper_right),
+            } };
+            return;
+            //bottom left
+        } else {
+            this_data.window_map_side_case = .{ .bottom_left = .{
+                .upper_window_map_boundry = isometric_math_utility.walkMapCoordFullWest(&this_data.upper_right),
+            } };
+            return;
+        }
     }
     fn initBottomRight(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.bottomright;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = map_position_x;
-        _ = map_position_y;
         _ = window_map_positions;
+
+        this_data.bottom_right = isometric_math_utility.isoToMapCoord(window_corner_points.bottom_right, map_position_x, map_position_y);
+
+        const linear_eq_right_win = LinearEquation{ .vertical = .{ .a = window_corner_points.upper_right.x } };
+        const map_side_intercept_right_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_right_win, &window_corner_points.upper_right, &window_corner_points.bottom_right, map_position_x, map_position_y);
+
+        const linear_eq_bottom_win = LinearEquation{ .has_slope = .{ .m = 0, .b = window_corner_points.bottom_left.y } };
+        const map_side_intercept_bottom_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_bottom_win, &window_corner_points.bottom_left, &window_corner_points.bottom_right, map_position_x, map_position_y);
+
+        //intercepts upper right
+        if (map_side_intercept_right_win.upper_right == .yes) {
+            const right_window_map_boundry = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_right);
+
+            this_data.window_map_side_case = .{ .intercepts_upper_right = .{
+                .right_window_map_boundry = right_window_map_boundry,
+                .most_top = isometric_math_utility.walkMapCoordFullNorthWest(&right_window_map_boundry),
+            } };
+            return;
+            //intercepts bottom left
+        } else if (map_side_intercept_bottom_win.bottom_left == .yes) {
+            this_data.window_map_side_case = .{ .intercepts_bottom_left = .{
+                .right_window_map_boundry = isometric_math_utility.walkMapCoordFullWest(&this_data.bottom_right),
+            } };
+            return;
+            //upper left
+        } else {
+            this_data.window_map_side_case = .{ .upper_left = .{
+                .right_window_map_boundry = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_right),
+                .bottom_window_map_boundry = isometric_math_utility.walkMapCoordFullWest(&this_data.bottom_right),
+            } };
+            return;
+        }
     }
     fn initBottomLeft(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.bottomleft;
-        _ = this_data;
-        _ = isometric_math_utility;
-        _ = window_corner_points;
-        _ = map_position_x;
-        _ = map_position_y;
         _ = window_map_positions;
+
+        this_data.bottom_left = isometric_math_utility.isIsoPointOnMap(window_corner_points.bottom_left, map_position_x, map_position_y);
+
+        const linear_eq_left_win = LinearEquation{ .vertical = .{ .a = window_corner_points.upper_left.x } };
+        const map_side_intercept_left_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_left_win, &window_corner_points.upper_left, &window_corner_points.bottom_left, map_position_x, map_position_y);
+
+        const linear_eq_bottom_win = LinearEquation{ .has_slope = .{ .m = 0, .b = window_corner_points.bottom_left.y } };
+        const map_side_intercept_bottom_win = isometric_math_utility.doesLineInterceptMap(&linear_eq_bottom_win, &window_corner_points.bottom_left, &window_corner_points.bottom_right, map_position_x, map_position_y);
+
+        //intercepts upper left
+        if (map_side_intercept_left_win.upper_left == .yes) {
+            const left_window_map_boundry = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_left);
+            this_data.window_map_side_case = .{ .intercepts_upper_left = .{
+                .left_window_map_boundry = left_window_map_boundry,
+                .most_top = isometric_math_utility.walkMapCoordFullNorthEast(&left_window_map_boundry),
+                .bottom_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.bottom_left),
+            } };
+            return;
+            //intercepts bottom right
+        } else if (map_side_intercept_bottom_win.bottom_right == .yes) {
+            const left_window_map_boundry = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_left);
+
+            this_data.window_map_side_case = .{ .intercepts_bottom_right = .{
+                .left_window_map_boundry = left_window_map_boundry,
+                .most_right = isometric_math_utility.walkMapCoordFullSouthEast(&left_window_map_boundry),
+                .bottom_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.bottom_left),
+            } };
+            return;
+            //upper right
+        } else {
+            this_data.window_map_side_case = .{ .upper_right = .{
+                .left_window_map_boundry = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_left),
+                .bottom_window_map_boundry = isometric_math_utility.walkMapCoordFullEast(&this_data.bottom_left),
+            } };
+            return;
+        }
     }
     fn initNone(this: *@This(), window_corner_points: *WindowCornerPoints, window_map_positions: *const WindowMapPositions, map_position_x: i32, map_position_y: i32, isometric_math_utility: *const IsometricMathUtility) void {
         const this_data = &this.data.none;
@@ -941,12 +1150,9 @@ const CaseHandler = struct {
         const this_data = &this.data.upperleft_upperright;
 
         if (this.current_coord) |this_current_coord| {
-            if (this_data.row_begin.hasEqualX(&this_data.row_end)) {
-
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
                 switch (this_data.window_map_side_case) {
-
                     .bottom_left => |bottom_left| {
-
                         if (bottom_left.has_row_begin_reached_upper_left) {
 
                             //END OF SCREEN
@@ -956,11 +1162,11 @@ const CaseHandler = struct {
 
                         //ROW BEGIN
                         if (!bottom_left.has_row_begin_reached_upper_left) {
-                             this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
-                             this.current_coord = this_data.row_begin;
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
 
-                             //CORNER REACHED
-                             bottom_left.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                            //CORNER REACHED
+                            bottom_left.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                         }
 
                         //ROW END
@@ -968,14 +1174,13 @@ const CaseHandler = struct {
                     },
 
                     .center => |center| {
-
                         if (center.has_row_begin_reached_upper_left) {
 
                             //END OF SCREEN
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
                             this.current_coord = this_data.row_begin;
                         }
-                        
+
                         //ROW BEGIN
                         if (!center.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
@@ -990,7 +1195,6 @@ const CaseHandler = struct {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
                         }
 
-
                         if (!center.has_row_end_reached_map_boundry_right) {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end);
 
@@ -999,7 +1203,7 @@ const CaseHandler = struct {
                         }
                     },
                     .bottom_right => |bottom_right| {
-                        if(bottom_right.has_row_begin_reached_upper_left){
+                        if (bottom_right.has_row_begin_reached_upper_left) {
 
                             //END OF SCREEN
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
@@ -1024,9 +1228,8 @@ const CaseHandler = struct {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
 
                             //CORNER REACHED
-                            bottom_right.has_row_end_reached_map_boundry_right = this_data.row_end.hasEqualX(&bottom_right.right_window_map_boundry);    
+                            bottom_right.has_row_end_reached_map_boundry_right = this_data.row_end.hasEqualX(&bottom_right.right_window_map_boundry);
                         }
-
                     },
                     .center_bottom_map_intercept => |center_bottom_map_intercept| {
 
@@ -1036,25 +1239,23 @@ const CaseHandler = struct {
                             this.current_coord = this_data.row_begin;
 
                             //END OF SCREEN
-                            if (this_data.row_begin.hasGreaterX(center_bottom_map_intercept.bottom_window_left_map_intercept)) return null; 
+                            if (this_data.row_begin.hasGreaterX(center_bottom_map_intercept.bottom_window_left_map_intercept)) return null;
                         }
-
 
                         if (center_bottom_map_intercept.has_row_begin_reached_upper_left and !center_bottom_map_intercept.has_row_begin_reached_map_boundry_left) {
-                           this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
-                           this.current_coord = this_data.row_begin;
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
 
-                           //CORNER REACHED
-                           center_bottom_map_intercept.has_row_begin_reached_map_boundry_left = this_data.row_begin.hasEqualY(center_bottom_map_intercept.left_window_map_boundry);     
+                            //CORNER REACHED
+                            center_bottom_map_intercept.has_row_begin_reached_map_boundry_left = this_data.row_begin.hasEqualY(center_bottom_map_intercept.left_window_map_boundry);
                         }
 
-
                         if (!center_bottom_map_intercept.has_row_begin_reached_upper_left and !center_bottom_map_intercept.has_row_begin_reached_map_boundry_left) {
-                           this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
-                           this.current_coord = this_data.row_begin;
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
 
-                           //CORNER REACHED
-                           center_bottom_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);     
+                            //CORNER REACHED
+                            center_bottom_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                         }
                         //ROW END
                         if (center_bottom_map_intercept.has_row_end_reached_map_boundry_right and center_bottom_map_intercept.has_row_end_reached_map_boundry_bottom_right) {
@@ -1062,7 +1263,7 @@ const CaseHandler = struct {
                         }
 
                         if (center_bottom_map_intercept.has_row_end_reached_map_boundry_right and !center_bottom_map_intercept.has_row_end_reached_map_boundry_bottom_right) {
-                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null; 
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
 
                             //CORNER REACHED
                             center_bottom_map_intercept.has_row_end_reached_map_boundry_bottom_right = this_data.row_end.hasEqualY(&center_bottom_map_intercept.bottom_window_right_map_intercept);
@@ -1083,22 +1284,22 @@ const CaseHandler = struct {
 
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
-                .bottom_left =>  {
+                .bottom_left => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .center =>  {
+                .center => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .bottom_right =>  {
+                .bottom_right => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .center_bottom_map_intercept =>  {
+                .center_bottom_map_intercept => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
@@ -1113,13 +1314,10 @@ const CaseHandler = struct {
         const this_data = &this.data.upperright_bottomright;
 
         if (this.current_coord) |this_current_coord| {
-
-            if (this_data.row_begin.hasEqualX(&this_data.row_end)) {
-
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
                 switch (this_data.window_map_side_case) {
-
                     .upper_side => |upper_side| {
-                        
+
                         //ROW BEGIN
 
                         if (upper_side.has_row_begin_reached_map_boundry_upper) {
@@ -1151,7 +1349,7 @@ const CaseHandler = struct {
                         }
                     },
                     .center => |center| {
-                        
+
                         //ROW BEGIN
                         if (center.has_row_begin_reached_map_boundry_upper) {
 
@@ -1161,8 +1359,8 @@ const CaseHandler = struct {
                         }
 
                         if (!center.has_row_begin_reached_map_boundry_upper) {
-                             this_data.row_begin = isometric_math_utility.walkMapCoordEastSingleMove(&this_data.row_begin) orelse return null;
-                             this.current_coord = this_data.row_begin;   
+                            this_data.row_begin = isometric_math_utility.walkMapCoordEastSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
 
                             //CORNER REACHED
                             center.has_row_begin_reached_map_boundry_upper = this_data.row_begin.hasEqualX(&center.upper_window_map_boundry);
@@ -1179,10 +1377,9 @@ const CaseHandler = struct {
                             //CORNER REACHED
                             center.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                         }
-
                     },
                     .bottom_side => |bottom_side| {
-                        
+
                         //ROW BEGIN
                         //END OF SCREEN
                         this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
@@ -1194,20 +1391,19 @@ const CaseHandler = struct {
                         }
 
                         if (!bottom_side.has_row_end_reached_bottom_right) {
-                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;    
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
 
                             //CORNER REACHED
                             bottom_side.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                         }
                     },
                     .center_leftside_map_intercept => |center_leftside_map_intercept| {
-                        
+
                         //ROW BEGIN
                         if (center_leftside_map_intercept.has_row_begin_reached_map_boundry_upper and center_leftside_map_intercept.has_row_begin_reached_map_boundry_left_upper) {
                             //END OF SCREEN
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
-                            this.current_coord = this_data.row_begin;    
-
+                            this.current_coord = this_data.row_begin;
                         }
 
                         if (center_leftside_map_intercept.has_row_begin_reached_map_boundry_upper and !center_leftside_map_intercept.has_row_begin_reached_map_boundry_left_upper) {
@@ -1217,7 +1413,6 @@ const CaseHandler = struct {
                             //CORNER REACHED
                             center_leftside_map_intercept.has_row_begin_reached_map_boundry_left_upper = this_data.row_begin.hasEqualY(&center_leftside_map_intercept.left_window_upper_map_intercept);
                         }
-
 
                         if (!center_leftside_map_intercept.has_row_begin_reached_map_boundry_upper and !center_leftside_map_intercept.has_row_begin_reached_map_boundry_left_upper) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
@@ -1247,22 +1442,22 @@ const CaseHandler = struct {
 
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
-                .upper_side =>  {
+                .upper_side => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .center =>  {
+                .center => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .bottom_side =>  {
+                .bottom_side => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .center_leftside_map_intercept =>  {
+                .center_leftside_map_intercept => {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
@@ -1277,7 +1472,7 @@ const CaseHandler = struct {
         const this_data = &this.data.bottomright_bottomleft;
 
         if (this.current_coord) |this_current_coord| {
-            if (this_data.row_begin.hasEqualX(&this_data.row_end)) {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
                 switch (this_data.window_map_side_case) {
                     .upper_left => |upper_left| {
 
@@ -1435,10 +1630,10 @@ const CaseHandler = struct {
         const this_data = &this.data.bottomleft_upperleft;
 
         if (this.current_coord) |this_current_coord| {
-            if (this_data.row_begin.hasEqualX(&this_data.row_end)) {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
                 switch (this_data.window_map_side_case) {
                     .upper_side => |upper_side| {
-                        
+
                         //ROW BEGIN
                         if (upper_side.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
@@ -1459,7 +1654,7 @@ const CaseHandler = struct {
                         this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end);
                     },
                     .center => |center| {
-                        
+
                         //ROW BEGIN
                         if (center.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
@@ -1471,7 +1666,7 @@ const CaseHandler = struct {
 
                         if (!center.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
-                            this.current_coord = this_data.row_begin;    
+                            this.current_coord = this_data.row_begin;
 
                             //CORNER REACHED
                             center.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
@@ -1486,25 +1681,24 @@ const CaseHandler = struct {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
 
                             //CORNER REACHED
-                            center.hase_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&center.bottom_window_map_boundry);    
+                            center.hase_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&center.bottom_window_map_boundry);
                         }
                     },
                     .bottom_side => |bottom_side| {
-                        
+
                         //ROW BEGIN
                         if (bottom_side.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
                             this.current_coord = this_data.row_begin;
 
-                            //END OF SCREEN 
-                            //TODO: check if the use of hasGreaterX function is correct. There might be the nid of a hasLowerX   
+                            //END OF SCREEN
+                            //TODO: check if the use of hasGreaterX function is correct. There might be the nid of a hasLowerX
                             if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
                         }
 
-
                         if (!bottom_side.has_row_begin_reached_upper_left) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
-                            this.current_coord  = this_data.row_begin;    
+                            this.current_coord = this_data.row_begin;
 
                             //CORNER REACHED
                             bottom_side.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
@@ -1528,9 +1722,8 @@ const CaseHandler = struct {
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
                             this.current_coord = this_data.row_begin;
 
-                            //END OF SCREEN            
+                            //END OF SCREEN
                             if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
-
                         }
 
                         if (!center_rightside_map_intercept.has_row_begin_reached_upper_left) {
@@ -1544,7 +1737,6 @@ const CaseHandler = struct {
 
                         if (center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
                             this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
-
                         }
 
                         if (center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and !center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
@@ -1552,16 +1744,13 @@ const CaseHandler = struct {
 
                             //CORNER REACHED
                             center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&center_rightside_map_intercept.bottom_window_map_boundry);
-
                         }
-
 
                         if (!center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom and !center_rightside_map_intercept.has_row_end_reached_map_boundry_bottom) {
                             this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
 
                             //CORNER REACHED
-                            center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom = this_data.row_end.hasEqualX(&center_rightside_map_intercept.right_window_bottom_map_intercept);    
-
+                            center_rightside_map_intercept.has_row_end_reached_map_boundry_right_bottom = this_data.row_end.hasEqualX(&center_rightside_map_intercept.right_window_bottom_map_intercept);
                         }
                     },
                 }
@@ -1599,27 +1788,342 @@ const CaseHandler = struct {
     }
     fn handleUpperLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
         const this_data = &this.data.upperleft;
-        _ = this_data;
-        _ = isometric_math_utility;
-        return undefined;
+
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
+                switch (this_data.window_map_side_case) {
+                    .intercepts_upper_right => |intercepts_upper_right| {
+                        if (intercepts_upper_right.has_row_begin_reached_upper_left) {
+                            //END OF SCREEN
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+                        }
+
+                        //ROW BEGIN
+                        if (!intercepts_upper_right.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            intercepts_upper_right.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(this_data.upper_left);
+                        }
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end);
+                    },
+                    .bottom_right => |bottom_right| {
+                        //ROW BEGIN
+                        if (bottom_right.has_row_begin_reached_upper_left) {
+                            //END OF SCREEN
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+                        }
+
+                        if (!bottom_right.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            bottom_right.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
+                    },
+                    .intercepts_bottom_left => |intercepts_bottom_left| {
+
+                        //ROW BEGIN
+                        if (intercepts_bottom_left.has_row_begin_reached_upper_left) {
+                            //END OF SCREEN
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+                        }
+
+                        if (!intercepts_bottom_left.has_row_begin_reached_upper_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            intercepts_bottom_left.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                        }
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
+                    },
+                }
+            } else {
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        }
+
+        if (this.current_coord == null) {
+            switch (this_data.window_map_side_case) {
+                .intercepts_upper_right => |intercepts_upper_right| {
+                    this_data.row_begin = intercepts_upper_right.upper_window_map_boundry;
+                    this_data.row_end = intercepts_upper_right.most_right;
+                    this.current_coord = intercepts_upper_right.upper_window_map_boundry;
+                },
+                .bottom_right => |bottom_right| {
+                    this_data.row_begin = bottom_right.upper_window_map_boundry;
+                    this_data.row_end = bottom_right.upper_window_map_boundry;
+                    this.current_coord = bottom_right.upper_window_map_boundry;
+                },
+                .intercepts_bottom_left => |intercepts_bottom_left| {
+                    this_data.row_begin = intercepts_bottom_left.upper_window_map_boundry;
+                    this_data.row_end = intercepts_bottom_left.upper_window_map_boundry;
+                    this.current_coord = intercepts_bottom_left.upper_window_map_boundry;
+                },
+            }
+        }
+
+        return this.current_coord;
     }
     fn handleUpperRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
         const this_data = &this.data.upperright;
-        _ = this_data;
-        _ = isometric_math_utility;
-        return undefined;
+
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
+                switch (this_data.window_map_side_case) {
+                    .intercepts_upper_left => |intercepts_upper_left| {
+                        //ROW BEGIN
+                        if (intercepts_upper_left.has_row_begin_reached_map_boundry_upper) {
+                            //END OF SCREEN
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+                        }
+
+                        if (!intercepts_upper_left.has_row_begin_reached_map_boundry_upper) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            intercepts_upper_left.has_row_begin_reached_map_boundry_upper = this_data.row_begin.hasEqualX(&intercepts_upper_left.upper_window_map_boundry);
+                        }
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+                    },
+                    .bottom_left => |bottom_left| {
+                        _ = bottom_left;
+                        //ROW BEGIN
+                        //END OF SCREEN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+                    },
+                    .intercepts_bottom_right => |intercepts_bottom_right| {
+                        //ROW BEGIN
+                        //END OF SCREEN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin);
+                        this.current_coord = this_data.row_begin;
+                        //ROW END
+                        if (intercepts_bottom_right.has_row_end_reached_map_boundry_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+
+                        if (!intercepts_bottom_right.has_row_end_reached_map_boundry_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+
+                            //CORNER REACHED
+                            intercepts_bottom_right.has_row_end_reached_map_boundry_right = this_data.row_end.hasEqualX(&intercepts_bottom_right.right_window_map_boundry);
+                        }
+                    },
+                }
+            } else {
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        }
+
+        if (this.current_coord == null) {
+            switch (this_data.window_map_side_case) {
+                .intercepts_upper_left => {
+                    this_data.row_begin = this_data.upper_right;
+                    this_data.row_end = this_data.upper_right;
+                    this.current_coord = this_data.upper_right;
+                },
+                .bottom_left => {
+                    this_data.row_begin = this_data.upper_right;
+                    this_data.row_end = this_data.upper_right;
+                    this.current_coord = this_data.upper_right;
+                },
+                .intercepts_bottom_right => {
+                    this_data.row_begin = this_data.upper_right;
+                    this_data.row_end = this_data.upper_right;
+                    this.current_coord = this_data.upper_right;
+                },
+            }
+        }
+
+        return this.current_coord;
     }
     fn handleBottomRight(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
         const this_data = &this.data.bottomright;
-        _ = this_data;
-        _ = isometric_math_utility;
-        return undefined;
+
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
+                switch (this_data.window_map_side_case) {
+                    .intercepts_upper_right => |intercepts_upper_right| {
+                        //ROW BEGIN
+                        //END OF SCREEN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+                        //ROW END
+                        if (intercepts_upper_right.has_row_end_reached_bottom_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+                        if (!intercepts_upper_right.has_row_end_reached_bottom_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            intercepts_upper_right.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
+                        }
+                    },
+                    .upper_left => |upper_left| {
+                        //ROW BEGIN
+                        //END OF SCREEN
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+                        //ROW END
+                        if (upper_left.has_row_end_reached_bottom_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+                        if (!upper_left.has_row_end_reached_bottom_right) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            upper_left.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
+                        }
+                    },
+                    .intercepts_bottom_left => |intercepts_bottom_left| {
+                        //ROW BEGIN
+                        //END OF SCREEN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+                        //ROW END
+                        if (intercepts_bottom_left.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+                        if (!intercepts_bottom_left.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED
+                            intercepts_bottom_left.has_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualX(&this_data.bottom_right);
+                        }
+                    },
+                }
+            } else {
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        }
+
+        if (this.current_coord == null) {
+            switch (this_data.window_map_side_case) {
+                .intercepts_upper_right => |intercepts_upper_right| {
+                    this_data.row_begin = intercepts_upper_right.right_window_map_boundry;
+                    this_data.row_end = intercepts_upper_right.right_window_map_boundry;
+                    this.current_coord = intercepts_upper_right.right_window_map_boundry;
+                },
+                .upper_left => |upper_left| {
+                    this_data.row_begin = upper_left.right_window_map_boundry;
+                    this_data.row_end = upper_left.right_window_map_boundry;
+                    this.current_coord = upper_left.right_window_map_boundry;
+                },
+                .intercepts_bottom_left => |intercepts_bottom_left| {
+                    this_data.row_begin = intercepts_bottom_left.right_window_map_boundry;
+                    this_data.row_end = intercepts_bottom_left.right_window_map_boundry;
+                    this.current_coord = intercepts_bottom_left.right_window_map_boundry;
+                },
+            }
+        }
+
+        return this.current_coord;
     }
     fn handleBottomLeft(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
         const this_data = &this.data.bottomleft;
-        _ = this_data;
-        _ = isometric_math_utility;
-        return undefined;
+
+        //TODO: make if pointer capture
+        if (this.current_coord) |this_current_coord| {
+            if (this_current_coord.hasEqualX(&this_data.row_end)) {
+                switch (this_data.window_map_side_case) {
+                    .intercepts_upper_left => |intercepts_upper_left| {
+                        //ROW BEGIN
+                        if (intercepts_upper_left.has_row_begin_reached_map_boundry_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //END OF SCREEN
+                            if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+                        }                        
+                        if (!intercepts_upper_left.has_row_begin_reached_map_boundry_left) {
+                            this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
+                            this.current_coord = this_data.row_begin;
+
+                            //CORNER REACHED
+                            intercepts_upper_left.has_row_begin_reached_map_boundry_left = this_data.row_begin.hasEqualY(&intercepts_upper_left.left_window_map_boundry);
+                        }
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end);
+
+                    },
+                    .upper_right => |upper_right| {
+                        _ = upper_right;
+                        //ROW BEGIN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+
+                        //END OF SCREEN
+                        if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+
+                        //ROW END
+                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end);
+
+                    },
+                    .intercepts_bottom_right => |intercepts_bottom_right| {
+                        //ROW BEGIN
+                        this_data.row_begin = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
+
+                        //END OF SCREEN
+                        if (this_data.row_begin.hasGreaterX(&this_data.bottom_left)) return null;
+
+                        //ROW END
+                        if (intercepts_bottom_right.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
+                        }
+                        if (!intercepts_bottom_right.has_row_end_reached_map_boundry_bottom) {
+                            this_data.row_end = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_end) orelse return null;
+
+                            //CORNER REACHED    
+                            intercepts_bottom_right.has_row_end_reached_map_boundry_bottom = this_data.row_end.hasEqualY(&intercepts_bottom_right.bottom_window_map_boundry);
+                        }
+
+                    },
+                }
+            } else {
+                this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(&this_current_coord) orelse return null;
+            }
+        }
+
+        if (this.current_coord == null) {
+            switch (this_data.window_map_side_case) {
+                //TODO: make all captures capture by reference, allign caputure name (equal names), copy just the pointer not the the whole struct
+                .intercepts_upper_left => |*intercepts_upper_left| {
+                    this_data.row_begin = intercepts_upper_left.most_top;
+                    this_data.row_end = intercepts_upper_left.bottom_window_map_boundry;
+                    this.current_coord = intercepts_upper_left.most_top;
+                },
+                .upper_right => |upper_right| {
+                    this_data.row_begin = upper_right.left_window_map_boundry;
+                    this_data.row_end = upper_right.bottom_window_map_boundry;
+                    this.current_coord = upper_right.left_window_map_boundry;
+                },
+                .intercepts_bottom_right => |intercepts_bottom_right| {
+                    this_data.row_begin = intercepts_bottom_right.left_window_map_boundry;
+                    this_data.row_end = intercepts_bottom_right.most_right;
+                    this.current_coord = intercepts_bottom_right.left_window_map_boundry;
+                },
+            }
+        }
+
+        return this.current_coord;
     }
     fn handleNone(this: *@This(), isometric_math_utility: *const IsometricMathUtility) ?Coord {
         const this_data = &this.data.none;
