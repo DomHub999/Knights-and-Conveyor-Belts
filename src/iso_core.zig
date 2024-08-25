@@ -65,6 +65,7 @@ pub const Point = struct { x: f32, y: f32 };
 
 pub const IsometricMathUtility = struct {
     tile_pix_width: f32,
+    //diamond because a tile may be a cuboid
     diamond_pix_height: f32,
 
     map_coord_to_iso_inc_x: f32,

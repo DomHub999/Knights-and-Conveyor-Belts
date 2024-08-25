@@ -25,7 +25,9 @@ const WindowCornerPoints = struct {
 };
 
 pub const TileIterator = struct {
-    margin: usize, //additional tiles to be considered out of bounds
+
+    //TODO: implement the margin (additional tiles to be considered out of bounds)
+    margin: usize,
 
     isometric_math_utility: IsometricMathUtility,
     window_pix_width: i32,
@@ -60,10 +62,10 @@ pub const TileIterator = struct {
     //TODO:make a struct from map_position_x and y
     pub fn initialize(this: *@This(), map_position_x: i32, map_position_y: i32) void {
         const window_map_positions = WindowMapPositions{
-            .upper_left = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_left, Point{ .x = map_position_x, .y = map_position_y }),
-            .upper_right = this.isometric_math_utility.isIsoPointOnMap(this.window_upper_right, Point{ .x = map_position_x, .y = map_position_y }),
-            .bottom_right = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_right, Point{ .x = map_position_x, .y = map_position_y }),
-            .bottom_left = this.isometric_math_utility.isIsoPointOnMap(this.window_bottom_left, Point{ .x = map_position_x, .y = map_position_y }),
+            .upper_left =  this.isometric_math_utility.isIsoPointOnMap(this.window_corner_points.upper_left, map_position_x, map_position_y),
+            .upper_right = this.isometric_math_utility.isIsoPointOnMap(this.window_corner_points.upper_right, map_position_x, map_position_y),
+            .bottom_right = this.isometric_math_utility.isIsoPointOnMap(this.window_corner_points.bottom_right, map_position_x, map_position_y),
+            .bottom_left = this.isometric_math_utility.isIsoPointOnMap(this.window_corner_points.bottom_left, map_position_x, map_position_y),
         };
 
         this.case_handler = CaseHandler.new(&this.isometric_math_utility, &window_map_positions, map_position_x, map_position_y);
@@ -2150,6 +2152,33 @@ const CaseHandler = struct {
         return this.current_coord;
     }
 };
+
+fn getTestIsometricMathUtility()IsometricMathUtility{
+    return IsometricMathUtility.new(16, 8, 7, 7);
+}
+
+test "test all_points" {
+
+    const isometric_math_utility = getTestIsometricMathUtility();
+
+    
+
+
+}
+test "test upperleft_upperright_bottomright" {}
+test "test upperright_bottomright_bottomleft" {}
+test "test bottomright_bottomleft_upperleft" {}
+test "test bottomleft_upperleft_upperright" {}
+test "test upperleft_upperright" {}
+test "test upperright_bottomright" {}
+test "test bottomright_bottomleft" {}
+test "test bottomleft_upperleft" {}
+test "test upperleft" {}
+test "test upperright" {}
+test "test bottomright" {}
+test "test bottomleft" {}
+test "test none" {}
+
 
 // has_row_begin_reached_upper_left 15 bool
 // has_row_end_reached_bottom_right 14 bool
