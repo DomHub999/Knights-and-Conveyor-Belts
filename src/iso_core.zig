@@ -41,23 +41,23 @@ pub const Coord = struct {
     map_array_coord_x: usize,
     map_array_coord_y: usize,
 
-    pub fn isEqual(this: *@This(), comp: *Coord) bool {
+    pub fn isEqual(this: *const @This(), comp: *Coord) bool {
         return (this.map_array_coord_x == comp.map_array_coord_x and this.map_array_coord_y == comp.map_array_coord_y);
     }
 
-    pub fn hasEqualX(this:*@This(), comp:*Coord)bool{
+    pub fn hasEqualX(this:*const @This(), comp:*Coord)bool{
         return this.map_array_coord_x == comp.map_array_coord_x;
     }
 
-    pub fn hasEqualY(this:*@This(), comp:*Coord)bool{
+    pub fn hasEqualY(this:*const @This(), comp:*Coord)bool{
         return this.map_array_coord_y == comp.map_array_coord_y;
     }
 
-    pub fn hasGreaterX(this:*@This(), comp:*Coord)bool{
+    pub fn hasGreaterX(this:*const @This(), comp:*Coord)bool{
         return this.map_array_coord_x > comp.map_array_coord_x;
     }
 
-    pub fn hasGreaterY(this:*@This(), comp:*Coord)bool{
+    pub fn hasGreaterY(this:*const @This(), comp:*Coord)bool{
         return this.map_array_coord_y > comp.map_array_coord_y;
     }
 };
@@ -119,25 +119,25 @@ pub const IsometricMathUtility = struct {
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
     }
 
-    pub fn isIsoPointOnMap(this: *@This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) PointPosition {
+    pub fn isIsoPointOnMap(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) PointPosition {
         //TODO: use adjustIsoPointToInitialPosition function 
-        const iso_pix_x_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.x)) - @as(f32, @floatFromInt(map_pos_x));
-        const iso_pix_y_map_pos_adj: f32 = @as(f32, @floatFromInt(iso_pix.y)) - @as(f32, @floatFromInt(map_pos_y));
+        const iso_pix_x_map_pos_adj: f32 = iso_pix.x - @as(f32, @floatFromInt(map_pos_x));
+        const iso_pix_y_map_pos_adj: f32 = iso_pix.y - @as(f32, @floatFromInt(map_pos_y));
         return isPointOnMap(iso_pix_x_map_pos_adj, iso_pix_y_map_pos_adj, &this.map_side_equations);
     }
 
-    pub fn doesLineInterceptMap(this: *@This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) MapSideIntercepts {
+    pub fn doesLineInterceptMap(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) MapSideIntercepts {
         const line_start_map_pos_adj = Point{ .x = line_start.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_start.y - @as(f32, @floatFromInt(map_pos_y)) };
         const line_end_map_pos_adj = Point{ .x = line_end.x - @as(f32, @floatFromInt(map_pos_x)), .y = line_end.y - @as(f32, @floatFromInt(map_pos_y)) };
         return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, line, &line_start_map_pos_adj, &line_end_map_pos_adj);
     }
 
-    pub fn adjustIsoPointToMapPosition(this:*@This(),point:Point, map_pos_x:i32, map_pos_y:i32)Point{
+    pub fn adjustIsoPointToMapPosition(this:*const @This(),point:Point, map_pos_x:i32, map_pos_y:i32)Point{
         _ = this;
         return .{.x = point.x + @as(f32, @floatFromInt(map_pos_x)), .y = point.y + @as(f32, @floatFromInt(map_pos_y))};
     }
     //initial position meaning, without map ("window") movement
-    pub fn adjustIsoPointToInitialPosition(this:*@This(),point:Point, map_pos_x:i32, map_pos_y:i32)Point{
+    pub fn adjustIsoPointToInitialPosition(this:*const @This(),point:Point, map_pos_x:i32, map_pos_y:i32)Point{
         _ = this;
         return .{.x = point.x - @as(f32, @floatFromInt(map_pos_x)), .y = point.y - @as(f32, @floatFromInt(map_pos_y))};
     }
@@ -195,6 +195,6 @@ pub const IsometricMathUtility = struct {
     }
     pub fn walkMapCoordFullNorthWest(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
-        return walkMapCoordFurthestNorth(coord.map_array_coord_y);
+        return walkMapCoordFurthestNorth(coord.map_array_coord_x, coord.map_array_coord_y);
     }
 };

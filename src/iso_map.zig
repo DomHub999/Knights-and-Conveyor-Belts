@@ -65,7 +65,7 @@ pub fn mapSideEquations(map_dimensions: *const MapDimensions) MapSideEquations {
     return map_side_equations;
 }
 
-const MapBoundries = struct {
+const MapBoundaries = struct {
     upper_right_x: f32,
     upper_right_y: f32,
 
@@ -80,7 +80,7 @@ const MapBoundries = struct {
 };
 
 //Calculates a map's boundaries for all four sides along the x and y axes, given a point and the linear equations for each side of the map
-//in other words: the point where a point and the boundries of a map would meet if the point was moved towards the map either ont he x or the y axis
+//in other words: the point where a point and the boundaries of a map would meet if the point was moved towards the map either ont he x or the y axis
 //ilustration: meeting points only depicted if the Point(X) was moved on the x axis (bl = bottom left, ul = upper left, ur = upper right, br = bottom right)
 //                    *
 //                  *   *
@@ -91,45 +91,45 @@ const MapBoundries = struct {
 //                *       *
 //                  *   *
 //                    *
-fn mapBoundries(x: f32, y: f32, map_side_equations: *const MapSideEquations) MapBoundries {
-    var map_boundries: MapBoundries = undefined;
-    const mse = map_side_equations;
+fn mapBoundaries(x: f32, y: f32, map_side_equations: *const MapSideEquations) MapBoundaries {
+    var map_boundaries: MapBoundaries = undefined;
+    const mse = map_side_equations; 
 
-    map_boundries.upper_right_x = findLinearX(mse.upper_right.m, y, mse.upper_right.b);
-    map_boundries.upper_right_y = findLinearY(mse.upper_right.m, x, mse.upper_right.b);
+    map_boundaries.upper_right_x = findLinearX(mse.upper_right.has_slope.m, y, mse.upper_right.has_slope.b);
+    map_boundaries.upper_right_y = findLinearY(mse.upper_right.has_slope.m, x, mse.upper_right.has_slope.b);
 
-    map_boundries.bottom_right_x = findLinearX(mse.bottom_right.m, y, mse.bottom_right.b);
-    map_boundries.bottom_right_y = findLinearY(mse.bottom_right.m, x, mse.bottom_right.b);
+    map_boundaries.bottom_right_x = findLinearX(mse.bottom_right.has_slope.m, y, mse.bottom_right.has_slope.b);
+    map_boundaries.bottom_right_y = findLinearY(mse.bottom_right.has_slope.m, x, mse.bottom_right.has_slope.b);
 
-    map_boundries.bottom_left_x = findLinearX(mse.bottom_left.m, y, mse.bottom_left.b);
-    map_boundries.bottom_left_y = findLinearY(mse.bottom_left.m, x, mse.bottom_left.b);
+    map_boundaries.bottom_left_x = findLinearX(mse.bottom_left.has_slope.m, y, mse.bottom_left.has_slope.b);
+    map_boundaries.bottom_left_y = findLinearY(mse.bottom_left.has_slope.m, x, mse.bottom_left.has_slope.b);
 
-    map_boundries.upper_left_x = findLinearX(mse.upper_left.m, y, mse.upper_left.b);
-    map_boundries.upper_left_y = findLinearY(mse.upper_left.m, x, mse.upper_left.b);
+    map_boundaries.upper_left_x = findLinearX(mse.upper_left.has_slope.m, y, mse.upper_left.has_slope.b);
+    map_boundaries.upper_left_y = findLinearY(mse.upper_left.has_slope.m, x, mse.upper_left.has_slope.b);
 
-    return map_boundries;
+    return map_boundaries;
 }
 
 // Determines whether a given point is on a map or out of bounds.
 // If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds,
 // as well as the coordinates on the boundary, if the point were to be moved towards the map's inbounds.
-pub const Boundry = enum { upper_right, bottom_right, bottom_left, upper_left };
-const BoundrySpot = struct { spot: Point, boundry_violation: Boundry };
-pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundrySpot };
+pub const Boundary = enum { upper_right, bottom_right, bottom_left, upper_left };
+const BoundarySpot = struct { spot: Point, boundary_violation: Boundary };
+pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundarySpot };
 pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
-    const map_boundries = mapBoundries(x, y, map_side_equations);
+    const map_boundaries = mapBoundaries(x, y, map_side_equations);
 
-    if (x > map_boundries.upper_right_x and y < map_boundries.upper_right_y) {
-        return PointPosition{ .not_on_map = .{ .position = .{ .x = map_boundries.upper_right_x, .y = map_boundries.upper_right_y }, .boundry_violation = .upper_right } };
+    if (x > map_boundaries.upper_right_x and y < map_boundaries.upper_right_y) {
+        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.upper_right_x, .y = map_boundaries.upper_right_y }, .boundary_violation = .upper_right } };
     }
-    if (x > map_boundries.bottom_right_x and y > map_boundries.bottom_right_y) {
-        return PointPosition{ .not_on_map = .{ .position = .{ .x = map_boundries.bottom_right_x, .y = map_boundries.bottom_right_y }, .boundry_violation = .bottom_right } };
+    if (x > map_boundaries.bottom_right_x and y > map_boundaries.bottom_right_y) {
+        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.bottom_right_x, .y = map_boundaries.bottom_right_y }, .boundary_violation = .bottom_right } };
     }
-    if (x < map_boundries.bottom_left_x and y > map_boundries.bottom_left_y) {
-        return PointPosition{ .not_on_map = .{ .position = .{ .x = map_boundries.bottom_left_x, .y = map_boundries.bottom_left_y }, .boundry_violation = .bottom_left } };
+    if (x < map_boundaries.bottom_left_x and y > map_boundaries.bottom_left_y) {
+        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.bottom_left_x, .y = map_boundaries.bottom_left_y }, .boundary_violation = .bottom_left } };
     }
-    if (x < map_boundries.upper_left_x and y < map_boundries.upper_left_y) {
-        return PointPosition{ .not_on_map = .{ .position = .{ .x = map_boundries.upper_left_x, .y = map_boundries.upper_left_y }, .boundry_violation = .upper_left } };
+    if (x < map_boundaries.upper_left_x and y < map_boundaries.upper_left_y) {
+        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.upper_left_x, .y = map_boundaries.upper_left_y }, .boundary_violation = .upper_left } };
     }
 
     return PointPosition.on_map;
@@ -160,12 +160,12 @@ pub fn doesLineInterceptMapBoundries(map_side_equations: *const MapSideEquations
     return map_side_intercepts;
 }
 
-fn determineIntercept(line: *const LinearEquation, map_side_equation: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_boundry_start: *const Point, map_boundry_end: *const Point) Intercept {
+fn determineIntercept(line: *const LinearEquation, map_side_equation: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_boundary_start: *const Point, map_boundary_end: *const Point) Intercept {
     var intercept: Intercept = .no;
     const intercept_point = lineIntercept(line, map_side_equation);
     if (intercept_point) |point| {
         const intercept_within_tested_line = isPointWithinLine(&point, line_start, line_end);
-        const intercept_within_map_side = isPointWithinLine(&point, map_boundry_start, map_boundry_end);
+        const intercept_within_map_side = isPointWithinLine(&point, map_boundary_start, map_boundary_end);
         if (intercept_within_tested_line and intercept_within_map_side) {
             intercept = .{ .yes = point };
         }
@@ -248,7 +248,7 @@ test "is point on map" {
     try expect(is_not_on_map_4 == .not_on_map);
 }
 
-test "line intercept boundry" {
+test "line intercept boundary" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
     const map_tiles_width: f32 = 3;
