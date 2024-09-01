@@ -1,4 +1,6 @@
 const std = @import("std");
+const Coord = @import("iso_core.zig").Coord;
+const Point = @import("iso_core.zig").Point;
 
 //** FROM A MAP ARRAY COORDINATE TO A PIXEL IN ISOMETRIC SPACE ON THE SCREEN AND VICE VERSA
 
@@ -103,70 +105,113 @@ fn diagonalDirection(tile_quart_rect_grid_coord_x: i32, tile_quart_rect_grid_coo
     };
 }
 
-// Given a tile quarter's rectangle, which is divided diagonally by a diamond's edge, determines on which side of the diagonal divider (tile quarter divisor) a point lies
-// const TileQuarterDivisorSide = enum { upper, lower };
-// fn tileQuarterRectDivisorRaising(iso_pix_x: f32, iso_pix_y: f32, tile_quart_rect_iso_position_x: f32, tile_quart_rect_iso_position_y: f32, rectangle_pix_width: f32, rectangle_pix_height: f32) ?TileQuarterDivisorSide {
-//     const x = iso_pix_x - (tile_quart_rect_iso_position_x + rectangle_pix_width);
-//     const y = iso_pix_y - tile_quart_rect_iso_position_y;
+//Given a tile quarter's rectangle, which is divided diagonally by a diamond's edge, determines on which side of the diagonal divider (tile quarter divisor) a point lies
 
-//     if (x == 0) return null; //In the improbable scenario where a point's x-coordinate lies on the opposing side of the tile quarter rectangle's origin
+//before moving the point of origin of the coordinate system to the right upper corner of the quader (now the upper left corner ist the origin of the coordinate system)
+//               minus
+//                 |
+//                 |
+//                 |
+//                 |
+// minus ----------------------- plus
+//                 | +
+//                 |   +    *P
+//                 |     +
+//                 |       +
+//                plus       +
+//                             +diagonal slope
 
-//     const iso_slope = y / x;
-//     const diagonal_slope = rectangle_pix_height / -rectangle_pix_width;
-
-//     if (iso_slope >= diagonal_slope) {
-//         return .upper;
-//     } else if (iso_slope < diagonal_slope) {
-//         return .lower;
-//     }
-
-//     return null;
-// }
+//after moving the point of origin of the coordinate system to the right upper corner of the quader
+//               minus
+//                 |
+//                 |
+//                 |
+//                 |
+// minus ----------------------- plus
+//               + |
+//         *P  +   |
+//           +     |
+//         +       |
+//       +        plus
+//     +diagonal slope
 
 const TileQuarterDivisorSide = enum { upper, lower };
-fn tileQuarterRectDivisorRaising(iso_pix_x: f32, iso_pix_y: f32, tile_quart_rect_iso_position_x: f32, tile_quart_rect_iso_position_y: f32, rectangle_pix_width: f32, rectangle_pix_height: f32) ?TileQuarterDivisorSide {
-    const x = iso_pix_x - tile_quart_rect_iso_position_x;// + rectangle_pix_width;
-    const y = iso_pix_y - tile_quart_rect_iso_position_y - rectangle_pix_height;
+fn tileQuarterRectDivisorRaising(
+    iso_pix_x: f32,
+    iso_pix_y: f32,
+    tile_quart_rect_iso_position_x: f32,
+    tile_quart_rect_iso_position_y: f32,
+    rectangle_pix_width: f32,
+    rectangle_pix_height: f32,
+    point_on_origin_default: TileQuarterDivisorSide,
+) TileQuarterDivisorSide {
+    var x = iso_pix_x - tile_quart_rect_iso_position_x;
+    const y = iso_pix_y - tile_quart_rect_iso_position_y;
 
-    if (x == 0) return null; //In the improbable scenario where a point's x-coordinate lies on the opposing side of the tile quarter rectangle's origin
+    x -= rectangle_pix_width; // move point of origin of the coordinate system to the right upper corner of the quader
+
+    if (x == 0) {
+        return point_on_origin_default; //In the improbable scenario where a point's x-coordinate lies on the opposing side of the tile quarter rectangle's origin
+    } 
 
     const iso_slope = y / x;
-    const diagonal_slope = -rectangle_pix_height / rectangle_pix_width;
+    const diagonal_slope = rectangle_pix_height / -rectangle_pix_width;
 
     if (iso_slope >= diagonal_slope) {
-        return .lower;
-    } else if (iso_slope < diagonal_slope) {
         return .upper;
+    } else { //iso_slope < diagonal_slope
+        return .lower;
     }
-
-    return null;
 }
-fn tileQuarterRectDivisorFalling(iso_pix_x: f32, iso_pix_y: f32, tile_quart_rect_iso_position_x: f32, tile_quart_rect_iso_position_y: f32, rectangle_pix_width: f32, rectangle_pix_height: f32) ?TileQuarterDivisorSide {
+//               minus
+//                 |
+//                 |
+//                 |
+//                 |
+// minus ----------------------- plus
+//                 | +
+//                 |   +    *P
+//                 |     +
+//                 |       +
+//                plus       +
+//                             +diagonal slope
+
+fn tileQuarterRectDivisorFalling(
+    iso_pix_x: f32,
+    iso_pix_y: f32,
+    tile_quart_rect_iso_position_x: f32,
+    tile_quart_rect_iso_position_y: f32,
+    rectangle_pix_width: f32,
+    rectangle_pix_height: f32,
+    point_on_origin_default: TileQuarterDivisorSide,
+) TileQuarterDivisorSide {
     const x = iso_pix_x - tile_quart_rect_iso_position_x;
     const y = iso_pix_y - tile_quart_rect_iso_position_y;
 
-    if (x == 0) return null; //In the improbable scenario where a point's y-coordinate lies on the tile quarter rectangle's origin
+    if (x == 0) {
+        return point_on_origin_default; //In the improbable scenario where a point's y-coordinate lies on the tile quarter rectangle's origin
+    } 
 
     const iso_slope = y / x;
     const diagonal_slope = rectangle_pix_height / rectangle_pix_width;
 
     if (iso_slope <= diagonal_slope) {
         return .upper;
-    } else if (iso_slope > diagonal_slope) {
+    } else { //iso_slope > diagonal_slope
         return .lower;
     }
-
-    return null;
 }
 
 // Given a point on the map in isometric space, calculates the tile's origin of the diamond on which the given point lies
 // This may later be used to to calculate the corresponding map array coordinate
+const TileOriginalIso = struct { tile_origin_iso_x: f32, tile_origin_iso_y: f32 };
 pub fn tileIsoOriginPosition(
     iso_pix_x: f32,
     iso_pix_y: f32,
     tile_pix_width: f32,
     diamond_pix_height: f32,
-) ?struct { tile_origin_iso_x: f32, tile_origin_iso_y: f32 } {
+    point_on_origin_default: TileQuarterDivisorSide,
+) TileOriginalIso {
     const rectangle_pix_width = tileQuartRectPixWidth(tile_pix_width);
     const rectangle_pix_height = tileQuartRectPixHeight(diamond_pix_height);
 
@@ -180,8 +225,8 @@ pub fn tileIsoOriginPosition(
     const tile_quart_rect_iso_position_y = tileQuartRectIsoPosY(tile_quart_rect_grid_coord_y, rectangle_pix_height);
 
     const tile_quarter_div_side = switch (diagonal_direction) {
-        .raising => tileQuarterRectDivisorRaising(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height).?,
-        .falling => tileQuarterRectDivisorFalling(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height).?,
+        .raising => tileQuarterRectDivisorRaising(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_origin_default),
+        .falling => tileQuarterRectDivisorFalling(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_origin_default),
     };
 
     if (diagonal_direction == .raising and tile_quarter_div_side == .upper) {
@@ -196,12 +241,10 @@ pub fn tileIsoOriginPosition(
     if (diagonal_direction == .falling and tile_quarter_div_side == .lower) {
         return .{ .tile_origin_iso_x = tile_quart_rect_iso_position_x - rectangle_pix_width, .tile_origin_iso_y = tile_quart_rect_iso_position_y };
     }
-    return null;
+    unreachable;
 }
 
 const expect = @import("std").testing.expect;
-const Coord = @import("iso_core.zig").Coord;
-const Point = @import("iso_core.zig").Point;
 
 test "diagonal direction" {
     try expect(diagonalDirection(0, 0) == DiagonalDirection.raising);
@@ -244,7 +287,7 @@ test "orth to iso and back lean" {
     try expect(map_array_coord_y == map_array_coord_y_calculated);
 }
 
-test "tile position" {
+test "tile position 1" {
     const tile_width: f32 = 129;
     const tile_height: f32 = 65;
 
@@ -254,10 +297,10 @@ test "tile position" {
     const bottom_right = Point{ .x = 110, .y = 103 };
     const bottom_left = Point{ .x = 74, .y = 103 };
 
-    const tile_position_upper_left = tileIsoOriginPosition(upper_left.x, upper_left.y, tile_width, tile_height).?;
-    const tile_position_upper_right = tileIsoOriginPosition(upper_right.x, upper_right.y, tile_width, tile_height).?;
-    const tile_position_bottom_right = tileIsoOriginPosition(bottom_right.x, bottom_right.y, tile_width, tile_height).?;
-    const tile_position_bottom_left = tileIsoOriginPosition(bottom_left.x, bottom_left.y, tile_width, tile_height).?;
+    const tile_position_upper_left = tileIsoOriginPosition(upper_left.x, upper_left.y, tile_width, tile_height, .upper);
+    const tile_position_upper_right = tileIsoOriginPosition(upper_right.x, upper_right.y, tile_width, tile_height, .upper);
+    const tile_position_bottom_right = tileIsoOriginPosition(bottom_right.x, bottom_right.y, tile_width, tile_height, .upper);
+    const tile_position_bottom_left = tileIsoOriginPosition(bottom_left.x, bottom_left.y, tile_width, tile_height, .upper);
 
     const map_coord_to_iso_inc_x = mapCoordToIsoPixIncX(tile_width);
     const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(tile_height);
@@ -283,9 +326,7 @@ test "tile position 2" {
     const tile_width: f32 = 8;
     const tile_height: f32 = 4;
 
-    const iso_point = Point{ .x = 5, .y = 6 };
-
-    const tile_origin_point = tileIsoOriginPosition(iso_point.x, iso_point.y, tile_width, tile_height).?;
-
-    try expect(tile_origin_point.tile_origin_iso_x == 0 and tile_origin_point.tile_origin_iso_y == 4);
+    const iso_point = Point{ .x = 8, .y = 6 };
+    const tile_origin_point = tileIsoOriginPosition(iso_point.x, iso_point.y, tile_width, tile_height, .upper);
+    try expect(tile_origin_point.tile_origin_iso_x == 8 and tile_origin_point.tile_origin_iso_y == 4);
 }
