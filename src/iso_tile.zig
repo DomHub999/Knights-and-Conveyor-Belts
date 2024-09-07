@@ -287,7 +287,7 @@ test "orth to iso and back lean" {
     try expect(map_array_coord_y == map_array_coord_y_calculated);
 }
 
-test "tile position 1" {
+test "tile position A" {
     const tile_width: f32 = 129;
     const tile_height: f32 = 65;
 
@@ -322,11 +322,183 @@ test "tile position 1" {
     try expect(tile_position_bottom_right.tile_origin_iso_y == iso_pix_y);
 }
 
-test "tile position 2" {
+test "tile position B" {
     const tile_width: f32 = 8;
     const tile_height: f32 = 4;
 
     const iso_point = Point{ .x = 8, .y = 6 };
     const tile_origin_point = tileIsoOriginPosition(iso_point.x, iso_point.y, tile_width, tile_height, .upper);
     try expect(tile_origin_point.tile_origin_iso_x == 8 and tile_origin_point.tile_origin_iso_y == 4);
+}
+
+test "tile position C"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 45;
+    const iso_point_y:f32 = 21;
+
+    const exp_result_x:f32 = 32;
+    const exp_result_y:f32 = 16;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 1"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 22;
+    const iso_point_y:f32 = 41;
+
+    const exp_result_x:f32 = 0;
+    const exp_result_y:f32 = 32;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 2"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 33;
+    const iso_point_y:f32 = 36;
+
+    const exp_result_x:f32 = 16;
+    const exp_result_y:f32 = 24;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 3"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 47;
+    const iso_point_y:f32 = 43;
+
+    const exp_result_x:f32 = 32;
+    const exp_result_y:f32 = 32;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 4"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 33;
+    const iso_point_y:f32 = 42;
+
+    const exp_result_x:f32 = 16;
+    const exp_result_y:f32 = 40;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+
+test "tile position 5"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = 46;
+    const iso_point_y:f32 = 52;
+
+    const exp_result_x:f32 = 32;
+    const exp_result_y:f32 = 48;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 6"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = -15;
+    const iso_point_y:f32 = 56;
+
+    const exp_result_x:f32 = -32;
+    const exp_result_y:f32 = 48;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 7"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = -15;
+    const iso_point_y:f32 = 63;
+
+    const exp_result_x:f32 = -32;
+    const exp_result_y:f32 = 48;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 8"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = -25;
+    const iso_point_y:f32 = 71;
+
+    const exp_result_x:f32 = -32;
+    const exp_result_y:f32 = 64;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 9"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = -25;
+    const iso_point_y:f32 = 75;
+
+    const exp_result_x:f32 = -32;
+    const exp_result_y:f32 = 64;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+
+test "tile position 10"{
+    const tile_width: f32 = 32;
+    const tile_height: f32 = 16;
+
+    const iso_point_x:f32 = -25;
+    const iso_point_y:f32 = 76;
+
+    const exp_result_x:f32 = -48;
+    const exp_result_y:f32 = 72;
+
+    const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
+    
+    try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
+}
+// printResult(tile_origin_point.tile_origin_iso_x, tile_origin_point.tile_origin_iso_y, exp_result_x, exp_result_y);
+fn printResult(x:f32, y:f32, ex:f32, ey:f32)void{
+    _ = ex;
+    _ = ey;
+    std.debug.print("x: {d} / y: {d}\n", .{x,y});
 }

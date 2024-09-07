@@ -2181,8 +2181,11 @@ test "test all_points" {
     var isometric_math_utility = getTestIsometricMathUtility();
     var tile_iterator = TileIterator.new(32, 20, &isometric_math_utility, 0);
     tile_iterator.initialize(0, 0);
-    const next_tile = tile_iterator.next();
-    _ = next_tile;
+
+    while (tile_iterator.next()) |tile| {
+        std.debug.print("x:{}, y:{}\n", .{tile.map_array_coord_x, tile.map_array_coord_y});
+    }
+    
 }
 test "test upperleft_upperright_bottomright" {}
 test "test upperright_bottomright_bottomleft" {}
