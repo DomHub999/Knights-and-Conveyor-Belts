@@ -105,35 +105,24 @@ fn diagonalDirection(tile_quart_rect_grid_coord_x: i32, tile_quart_rect_grid_coo
     };
 }
 
-//Given a tile quarter's rectangle, which is divided diagonally by a diamond's edge, determines on which side of the diagonal divider (tile quarter divisor) a point lies
 
-//before moving the point of origin of the coordinate system to the right upper corner of the quader (now the upper left corner ist the origin of the coordinate system)
 //               minus
 //                 |
 //                 |
-//                 |
-//                 |
+//                 |                   +
+//                 |                + 
 // minus ----------------------- plus
-//                 | +
-//                 |   +    *P
-//                 |     +
-//                 |       +
-//                plus       +
-//                             +diagonal slope
-
-//after moving the point of origin of the coordinate system to the right upper corner of the quader
-//               minus
-//                 |
-//                 |
-//                 |
-//                 |
-// minus ----------------------- plus
-//               + |
-//         *P  +   |
-//           +     |
-//         +       |
-//       +        plus
-//     +diagonal slope
+//                 |           +
+//                 |  *P    +   
+//                 |     +  
+//                 |  +diagonal slope      
+//                plus 
+//               + |     
+//            +
+// 1. Adjust the target point to fit within the dimensions of the "quarter rectangle"
+// 2. Calculate the slope of the diagonal (rise over run)
+// 3. Compute the y-coordinate on the diagonal line using the x-coordinate of the target point
+// 4. Compare the calculated y-coordinate with the y-coordinate of the target point to determine if it's higher or lower                 
 
 const TileQuarterDivisorSide = enum { upper, lower };
 fn tileQuarterRectDivisorRaising(
@@ -143,26 +132,26 @@ fn tileQuarterRectDivisorRaising(
     tile_quart_rect_iso_position_y: f32,
     rectangle_pix_width: f32,
     rectangle_pix_height: f32,
-    point_on_origin_default: TileQuarterDivisorSide,
+    point_on_diagonal_slope: TileQuarterDivisorSide,
 ) TileQuarterDivisorSide {
-    var x = iso_pix_x - tile_quart_rect_iso_position_x;
-    const y = iso_pix_y - tile_quart_rect_iso_position_y;
 
-    x -= rectangle_pix_width; // move point of origin of the coordinate system to the right upper corner of the quader
+    const iso_pix_x_in_quart_rect = iso_pix_x - tile_quart_rect_iso_position_x;
+    const iso_pix_y_in_quart_rect = iso_pix_y - tile_quart_rect_iso_position_y;
 
-    if (x == 0) {
-        return point_on_origin_default; //In the improbable scenario where a point's x-coordinate lies on the opposing side of the tile quarter rectangle's origin
-    } 
+    const diagonal_slope = -(rectangle_pix_height / rectangle_pix_width);
+    const diag_slope_y_intercept: f32 = rectangle_pix_height;
 
-    const iso_slope = y / x;
-    const diagonal_slope = rectangle_pix_height / -rectangle_pix_width;
+    const diagonal_slope_y_at_iso_pix_x_in_quart_rect = diagonal_slope * iso_pix_x_in_quart_rect + diag_slope_y_intercept;
 
-    if (iso_slope >= diagonal_slope) {
-        return .upper;
-    } else { //iso_slope < diagonal_slope
+    if (iso_pix_y_in_quart_rect > diagonal_slope_y_at_iso_pix_x_in_quart_rect) {
         return .lower;
+    } else if (iso_pix_y_in_quart_rect < diagonal_slope_y_at_iso_pix_x_in_quart_rect) {
+        return .upper;
+    } else {
+        return point_on_diagonal_slope; //if the calculated point lies on the diagonal slope, return default
     }
 }
+
 //               minus
 //                 |
 //                 |
@@ -175,6 +164,10 @@ fn tileQuarterRectDivisorRaising(
 //                 |       +
 //                plus       +
 //                             +diagonal slope
+// 1. Adjust the target point to fit within the dimensions of the "quarter rectangle"
+// 2. Calculate the slope of the diagonal (rise over run)
+// 3. Compute the y-coordinate on the diagonal line using the x-coordinate of the target point
+// 4. Compare the calculated y-coordinate with the y-coordinate of the target point to determine if it's higher or lower
 
 fn tileQuarterRectDivisorFalling(
     iso_pix_x: f32,
@@ -183,22 +176,22 @@ fn tileQuarterRectDivisorFalling(
     tile_quart_rect_iso_position_y: f32,
     rectangle_pix_width: f32,
     rectangle_pix_height: f32,
-    point_on_origin_default: TileQuarterDivisorSide,
+    point_on_diagonal_slope: TileQuarterDivisorSide,
 ) TileQuarterDivisorSide {
-    const x = iso_pix_x - tile_quart_rect_iso_position_x;
-    const y = iso_pix_y - tile_quart_rect_iso_position_y;
+    const iso_pix_x_in_quart_rect = iso_pix_x - tile_quart_rect_iso_position_x;
+    const iso_pix_y_in_quart_rect = iso_pix_y - tile_quart_rect_iso_position_y;
 
-    if (x == 0) {
-        return point_on_origin_default; //In the improbable scenario where a point's y-coordinate lies on the tile quarter rectangle's origin
-    } 
+    const diagonal_slope = (rectangle_pix_height / rectangle_pix_width);
+    const diag_slope_y_intercept: f32 = 0;
 
-    const iso_slope = y / x;
-    const diagonal_slope = rectangle_pix_height / rectangle_pix_width;
+    const diagonal_slope_y_at_iso_pix_x_in_quart_rect = diagonal_slope * iso_pix_x_in_quart_rect + diag_slope_y_intercept;
 
-    if (iso_slope <= diagonal_slope) {
-        return .upper;
-    } else { //iso_slope > diagonal_slope
+    if (iso_pix_y_in_quart_rect > diagonal_slope_y_at_iso_pix_x_in_quart_rect) {
         return .lower;
+    } else if (iso_pix_y_in_quart_rect < diagonal_slope_y_at_iso_pix_x_in_quart_rect) {
+        return .upper;
+    } else {
+        return point_on_diagonal_slope; //if the calculated point lies on the diagonal slope, return default
     }
 }
 
@@ -210,7 +203,7 @@ pub fn tileIsoOriginPosition(
     iso_pix_y: f32,
     tile_pix_width: f32,
     diamond_pix_height: f32,
-    point_on_origin_default: TileQuarterDivisorSide,
+    point_on_diagonal_slope: TileQuarterDivisorSide,
 ) TileOriginalIso {
     const rectangle_pix_width = tileQuartRectPixWidth(tile_pix_width);
     const rectangle_pix_height = tileQuartRectPixHeight(diamond_pix_height);
@@ -225,8 +218,8 @@ pub fn tileIsoOriginPosition(
     const tile_quart_rect_iso_position_y = tileQuartRectIsoPosY(tile_quart_rect_grid_coord_y, rectangle_pix_height);
 
     const tile_quarter_div_side = switch (diagonal_direction) {
-        .raising => tileQuarterRectDivisorRaising(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_origin_default),
-        .falling => tileQuarterRectDivisorFalling(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_origin_default),
+        .raising => tileQuarterRectDivisorRaising(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_diagonal_slope),
+        .falling => tileQuarterRectDivisorFalling(iso_pix_x, iso_pix_y, tile_quart_rect_iso_position_x, tile_quart_rect_iso_position_y, rectangle_pix_width, rectangle_pix_height, point_on_diagonal_slope),
     };
 
     if (diagonal_direction == .raising and tile_quarter_div_side == .upper) {
@@ -331,174 +324,173 @@ test "tile position B" {
     try expect(tile_origin_point.tile_origin_iso_x == 8 and tile_origin_point.tile_origin_iso_y == 4);
 }
 
-test "tile position C"{
+test "tile position C" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 45;
-    const iso_point_y:f32 = 21;
+    const iso_point_x: f32 = 45;
+    const iso_point_y: f32 = 21;
 
-    const exp_result_x:f32 = 32;
-    const exp_result_y:f32 = 16;
+    const exp_result_x: f32 = 32;
+    const exp_result_y: f32 = 16;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 1"{
+test "tile position 1" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 22;
-    const iso_point_y:f32 = 41;
+    const iso_point_x: f32 = 22;
+    const iso_point_y: f32 = 41;
 
-    const exp_result_x:f32 = 0;
-    const exp_result_y:f32 = 32;
+    const exp_result_x: f32 = 0;
+    const exp_result_y: f32 = 32;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 2"{
+test "tile position 2" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 33;
-    const iso_point_y:f32 = 36;
+    const iso_point_x: f32 = 33;
+    const iso_point_y: f32 = 36;
 
-    const exp_result_x:f32 = 16;
-    const exp_result_y:f32 = 24;
+    const exp_result_x: f32 = 16;
+    const exp_result_y: f32 = 24;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 3"{
+test "tile position 3" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 47;
-    const iso_point_y:f32 = 43;
+    const iso_point_x: f32 = 47;
+    const iso_point_y: f32 = 43;
 
-    const exp_result_x:f32 = 32;
-    const exp_result_y:f32 = 32;
+    const exp_result_x: f32 = 32;
+    const exp_result_y: f32 = 32;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 4"{
+test "tile position 4" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 33;
-    const iso_point_y:f32 = 42;
+    const iso_point_x: f32 = 33;
+    const iso_point_y: f32 = 42;
 
-    const exp_result_x:f32 = 16;
-    const exp_result_y:f32 = 40;
+    const exp_result_x: f32 = 16;
+    const exp_result_y: f32 = 40;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-
-test "tile position 5"{
+test "tile position 5" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = 46;
-    const iso_point_y:f32 = 52;
+    const iso_point_x: f32 = 46;
+    const iso_point_y: f32 = 52;
 
-    const exp_result_x:f32 = 32;
-    const exp_result_y:f32 = 48;
+    const exp_result_x: f32 = 32;
+    const exp_result_y: f32 = 48;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 6"{
+test "tile position 6" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = -15;
-    const iso_point_y:f32 = 56;
+    const iso_point_x: f32 = -15;
+    const iso_point_y: f32 = 56;
 
-    const exp_result_x:f32 = -32;
-    const exp_result_y:f32 = 48;
+    const exp_result_x: f32 = -32;
+    const exp_result_y: f32 = 48;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 7"{
+test "tile position 7" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = -15;
-    const iso_point_y:f32 = 63;
+    const iso_point_x: f32 = -15;
+    const iso_point_y: f32 = 63;
 
-    const exp_result_x:f32 = -32;
-    const exp_result_y:f32 = 48;
+    const exp_result_x: f32 = -32;
+    const exp_result_y: f32 = 48;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 8"{
+test "tile position 8" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = -25;
-    const iso_point_y:f32 = 71;
+    const iso_point_x: f32 = -25;
+    const iso_point_y: f32 = 71;
 
-    const exp_result_x:f32 = -32;
-    const exp_result_y:f32 = 64;
+    const exp_result_x: f32 = -32;
+    const exp_result_y: f32 = 64;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 9"{
+test "tile position 9" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = -25;
-    const iso_point_y:f32 = 75;
+    const iso_point_x: f32 = -25;
+    const iso_point_y: f32 = 75;
 
-    const exp_result_x:f32 = -32;
-    const exp_result_y:f32 = 64;
+    const exp_result_x: f32 = -32;
+    const exp_result_y: f32 = 64;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
 
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 
-test "tile position 10"{
+test "tile position 10" {
     const tile_width: f32 = 32;
     const tile_height: f32 = 16;
 
-    const iso_point_x:f32 = -25;
-    const iso_point_y:f32 = 76;
+    const iso_point_x: f32 = -25;
+    const iso_point_y: f32 = 76;
 
-    const exp_result_x:f32 = -48;
-    const exp_result_y:f32 = 72;
+    const exp_result_x: f32 = -48;
+    const exp_result_y: f32 = 72;
 
     const tile_origin_point = tileIsoOriginPosition(iso_point_x, iso_point_y, tile_width, tile_height, .upper);
-    
+
     try expect(tile_origin_point.tile_origin_iso_x == exp_result_x and tile_origin_point.tile_origin_iso_y == exp_result_y);
 }
 // printResult(tile_origin_point.tile_origin_iso_x, tile_origin_point.tile_origin_iso_y, exp_result_x, exp_result_y);
-fn printResult(x:f32, y:f32, ex:f32, ey:f32)void{
+fn printResult(x: f32, y: f32, ex: f32, ey: f32) void {
     _ = ex;
     _ = ey;
-    std.debug.print("x: {d} / y: {d}\n", .{x,y});
+    std.debug.print("x: {d} / y: {d}\n", .{ x, y });
 }

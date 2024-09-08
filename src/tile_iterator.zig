@@ -452,7 +452,7 @@ const CaseHandler = struct {
 
     const CaseHandlerList = [NUM_OF_CASES]CaseHandler;
     const CaseIdxTy:type = u4;
-    const NUM_OF_CASES: usize = std.math.pow(usize, 2, @typeInfo(CaseIdxTy).Int.bits);
+    const NUM_OF_CASES: usize = std.math.pow(usize, 2, @typeInfo(CaseIdxTy).int.bits);
     fn createCaseHandlerDeterminationFunctionTab() CaseHandlerList {
         var this_case_handler_list: CaseHandlerList = undefined;
 
