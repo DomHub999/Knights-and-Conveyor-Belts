@@ -41,8 +41,7 @@ pub const Drawer = struct {
                 const ground_tile = @intFromEnum(tile.ground);
                 const ground_tex = this.resources_ground[ground_tile].texture;
 
-                const iso_coordinates = map.iso.mapCoordToIso(x, y, map.map_position_x, map.map_position_y);
-
+                const iso_coordinates = map.isometric_math_utility.mapCoordToIso(.{.map_array_coord_x = x, .map_array_coord_y = y}, map.map_position_x, map.map_position_y);
                 rl.DrawTextureEx(ground_tex, .{ .x = iso_coordinates.iso_pix_x, .y = iso_coordinates.iso_pix_y }, 0, 1, rl.WHITE);
             }
         }
@@ -77,7 +76,7 @@ pub const Hardware = struct {
         return .{ .x = mouse_position.x, .y = mouse_position.y };
     }
 
-    const KeyMapping = [@typeInfo(Keyboard).Enum.fields.len]i32;
+    const KeyMapping = [@typeInfo(Keyboard).@"enum".fields.len]i32;
     fn makeKeyMapping()KeyMapping{
         var key_map:KeyMapping = undefined;
         key_map[@intFromEnum(Keyboard.move_map_left)] = rl.KEY_A;

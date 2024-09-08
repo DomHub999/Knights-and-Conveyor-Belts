@@ -360,9 +360,7 @@ const CaseHandler = struct {
 
                     has_row_begin_reached_map_boundary_upper: bool = false,
                 },
-                bottom_left: struct {
-
-                },
+                bottom_left: struct {},
                 intercepts_bottom_right: struct {
                     right_window_map_boundary: Coord,
 
@@ -451,7 +449,7 @@ const CaseHandler = struct {
     current_coord: ?Coord = null,
 
     const CaseHandlerList = [NUM_OF_CASES]CaseHandler;
-    const CaseIdxTy:type = u4;
+    const CaseIdxTy: type = u4;
     const NUM_OF_CASES: usize = std.math.pow(usize, 2, @typeInfo(CaseIdxTy).int.bits);
     fn createCaseHandlerDeterminationFunctionTab() CaseHandlerList {
         var this_case_handler_list: CaseHandlerList = undefined;
@@ -810,9 +808,7 @@ const CaseHandler = struct {
             return;
             //bottom left
         } else {
-            this_data.window_map_side_case = .{ .bottom_left = .{
-                
-            } };
+            this_data.window_map_side_case = .{ .bottom_left = .{} };
             return;
         }
     }
@@ -901,7 +897,7 @@ const CaseHandler = struct {
         this_data.most_top = Coord{ .map_array_coord_x = 0, .map_array_coord_y = 0 };
         this_data.most_right = isometric_math_utility.walkMapCoordFullSouthEast(&this_data.row_begin);
 
-        const map_top = isometric_math_utility.adjustIsoPointToMapPosition(isometric_math_utility.map_dimensions.top, map_position_x, map_position_y);
+        const map_top = isometric_math_utility.adjustTileOriginPointInIsoToMapMovement(isometric_math_utility.map_dimensions.top, map_position_x, map_position_y);
         this_data.is_map_outside_window = !(map_top.x >= window_corner_points.upper_left.x and map_top.x <= window_corner_points.upper_right.x and map_top.y >= window_corner_points.upper_left.y and map_top.y <= window_corner_points.bottom_left.y);
     }
 
@@ -938,7 +934,7 @@ const CaseHandler = struct {
                     //CORNER REACHED
                     this_data.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 }
-            } else { 
+            } else {
                 this.current_coord = isometric_math_utility.walkMapCoordSouthEastSingleMove(this_current_coord) orelse return null;
             }
         }
@@ -1157,9 +1153,7 @@ const CaseHandler = struct {
         const this_data = &this.data.upperleft_upperright;
 
         if (this.current_coord) |*this_current_coord| {
-
             if (this_current_coord.hasEqualX(&this_data.row_end)) {
-
                 switch (this_data.window_map_side_case) {
                     .bottom_left => |*bottom_left| {
                         if (bottom_left.has_row_begin_reached_upper_left) {
@@ -2174,18 +2168,53 @@ const CaseHandler = struct {
 const expect = std.testing.expect;
 
 fn getTestIsometricMathUtility() IsometricMathUtility {
-    return IsometricMathUtility.new(16, 8, 7, 7);
+    return IsometricMathUtility.new(32, 16, 7, 8);
+}
+
+fn printTiles(tile_iterator:*TileIterator)void{
+
+
+    while (tile_iterator.next()) |tile| {
+        std.debug.print("\n", .{});
+        std.debug.print("x:{}, y:{}", .{ tile.map_array_coord_x, tile.map_array_coord_y });
+    }
+    std.debug.print("\n", .{});
+
+}
+
+fn checkSolution(tile_iterator:*TileIterator, solution:[]const Coord)!void{
+
+    var index:usize = 0;
+    while (tile_iterator.next()) |tile| {
+        const sol = &solution[index];
+        try expect(tile.map_array_coord_x == sol.map_array_coord_x and tile.map_array_coord_y == sol.map_array_coord_y);
+        index += 1;
+    }
 }
 
 test "test all_points" {
     var isometric_math_utility = getTestIsometricMathUtility();
-    var tile_iterator = TileIterator.new(32, 20, &isometric_math_utility, 0);
-    tile_iterator.initialize(0, 0);
+    var tile_iterator = TileIterator.new(64, 32, &isometric_math_utility, 0);
+    tile_iterator.initialize(-11, 41);
 
-    while (tile_iterator.next()) |tile| {
-        std.debug.print("x:{}, y:{}\n", .{tile.map_array_coord_x, tile.map_array_coord_y});
-    }
-    
+    const solution = [_]Coord{
+      Coord{.map_array_coord_x = 3, .map_array_coord_y = 1},
+      Coord{.map_array_coord_x = 2, .map_array_coord_y = 2},
+      Coord{.map_array_coord_x = 3, .map_array_coord_y = 2},
+      Coord{.map_array_coord_x = 4, .map_array_coord_y = 2},
+      Coord{.map_array_coord_x = 1, .map_array_coord_y = 3},
+      Coord{.map_array_coord_x = 2, .map_array_coord_y = 3},
+      Coord{.map_array_coord_x = 3, .map_array_coord_y = 3},
+      Coord{.map_array_coord_x = 4, .map_array_coord_y = 3},
+      Coord{.map_array_coord_x = 5, .map_array_coord_y = 3},
+      Coord{.map_array_coord_x = 2, .map_array_coord_y = 4},
+      Coord{.map_array_coord_x = 3, .map_array_coord_y = 4},
+      Coord{.map_array_coord_x = 4, .map_array_coord_y = 4},
+      Coord{.map_array_coord_x = 3, .map_array_coord_y = 5},
+    };
+
+    try checkSolution(&tile_iterator, solution[0..]);
+
 }
 test "test upperleft_upperright_bottomright" {}
 test "test upperright_bottomright_bottomleft" {}

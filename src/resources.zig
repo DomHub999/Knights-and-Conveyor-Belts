@@ -1,6 +1,6 @@
 const Ground = @import("tile.zig").Ground;
 
-const GroundSpriteSourceType = [@typeInfo(Ground).Enum.fields.len][]const u8;
+const GroundSpriteSourceType = [@typeInfo(Ground).@"enum".fields.len][]const u8;
 fn makeGroundSpriteSource() GroundSpriteSourceType {
     var this_ground_sprite_source: GroundSpriteSourceType = undefined;
     this_ground_sprite_source[@intFromEnum(Ground.grass)] = "resources/grass.png";
