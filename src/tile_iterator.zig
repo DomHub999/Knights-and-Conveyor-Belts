@@ -457,7 +457,7 @@ const CaseHandler = struct {
         this_case_handler_list[detectCase(&windowOnMapFromBool(true, true, true, true))] = CaseHandler{ .init = initAllPoints, .get_next_tile_coord = handleAllPoints, .data = .{ .all_points = .{} } };
         this_case_handler_list[detectCase(&windowOnMapFromBool(true, true, true, false))] = CaseHandler{ .init = initUpperLeftUpperRightBottomRight, .get_next_tile_coord = handleUpperLeftUpperRightBottomRight, .data = .{ .upperleft_upperright_bottomright = .{} } };
         this_case_handler_list[detectCase(&windowOnMapFromBool(false, true, true, true))] = CaseHandler{ .init = initUpperRightBottomRightBottomLeft, .get_next_tile_coord = handleUpperRightBottomRightBottomLeft, .data = .{ .upperright_bottomright_bottomleft = .{} } };
-        this_case_handler_list[detectCase(&windowOnMapFromBool(true, true, false, true))] = CaseHandler{ .init = initBottomRightBottomLeftUpperLeft, .get_next_tile_coord = handleBottomRightBottomLeftUpperLeft, .data = .{ .bottomright_bottomleft_upperleft = .{} } };
+        this_case_handler_list[detectCase(&windowOnMapFromBool(true, false, true, true))] = CaseHandler{ .init = initBottomRightBottomLeftUpperLeft, .get_next_tile_coord = handleBottomRightBottomLeftUpperLeft, .data = .{ .bottomright_bottomleft_upperleft = .{} } };
         this_case_handler_list[detectCase(&windowOnMapFromBool(true, true, false, true))] = CaseHandler{ .init = initBottomLeftUpperLeftUpperRight, .get_next_tile_coord = handleBottomLeftUpperLeftUpperRight, .data = .{ .bottomleft_upperleft_upperright = .{} } };
         this_case_handler_list[detectCase(&windowOnMapFromBool(true, true, false, false))] = CaseHandler{ .init = initUpperLeftUpperRight, .get_next_tile_coord = handleUpperLeftUpperRight, .data = .{ .upperleft_upperright = .{} } };
         this_case_handler_list[detectCase(&windowOnMapFromBool(false, true, true, false))] = CaseHandler{ .init = initUpperRightBottomRight, .get_next_tile_coord = handleUpperRightBottomRight, .data = .{ .upperright_bottomright = .{} } };
@@ -943,6 +943,9 @@ const CaseHandler = struct {
             this_data.row_begin = this_data.upper_right;
             this_data.row_end = this_data.upper_right;
             this.current_coord = this_data.upper_right;
+
+            this_data.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualY(&this_data.upper_left);
+            this_data.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
         }
 
         return this.current_coord;
@@ -990,6 +993,9 @@ const CaseHandler = struct {
             this_data.row_begin = this_data.upper_right;
             this_data.row_end = this_data.upper_right;
             this.current_coord = this_data.upper_right;
+
+            this_data.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualY(&this_data.upper_left);
+            this_data.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
         }
 
         return this.current_coord;
@@ -1026,11 +1032,11 @@ const CaseHandler = struct {
                 }
 
                 //ROW END
-                if (!this_data.has_row_end_reached_bottom_right) {
+                if (this_data.has_row_end_reached_bottom_right) {
                     this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
                 }
 
-                if (this_data.has_row_end_reached_bottom_right) {
+                if (!this_data.has_row_end_reached_bottom_right) {
                     this_data.row_end = isometric_math_utility.walkMapCoordSouthSingleMove(&this_data.row_end) orelse return null;
 
                     //CORNER REACHED
@@ -1045,6 +1051,9 @@ const CaseHandler = struct {
             this_data.row_begin = this_data.upper_right;
             this_data.row_end = this_data.upper_right;
             this.current_coord = this_data.upper_right;
+
+            this_data.has_row_begin_reached_map_boundary_upper = this_data.row_begin.hasEqualX(&this_data.upper_window_map_boundary);
+            this_data.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
         }
 
         return this.current_coord;
@@ -1092,6 +1101,9 @@ const CaseHandler = struct {
             this_data.row_begin = this_data.upper_window_map_boundary;
             this_data.row_end = this_data.right_window_map_boundary;
             this.current_coord = this_data.row_begin;
+
+            this_data.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+            this_data.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
         }
 
         return this.current_coord;
@@ -1145,6 +1157,9 @@ const CaseHandler = struct {
             this_data.row_begin = this_data.upper_right;
             this_data.row_end = this_data.upper_right;
             this.current_coord = this_data.row_begin;
+
+            this_data.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+            this_data.has_row_end_reached_map_boundary_right = this_data.row_end.hasEqualX(&this_data.right_window_map_boundary);
         }
 
         return this.current_coord;
@@ -1287,25 +1302,36 @@ const CaseHandler = struct {
 
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
-                .bottom_left => {
+                .bottom_left => |*bottom_left| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    bottom_left.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                 },
-                .center => {
+                .center => |*center| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    center.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    center.has_row_end_reached_map_boundary_right = this_data.row_end.hasEqualX(&center.right_window_map_boundary);
                 },
-                .bottom_right => {
+                .bottom_right => |*bottom_right| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    bottom_right.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    bottom_right.has_row_end_reached_map_boundary_right = this_data.row_end.hasEqualX(&bottom_right.right_window_map_boundary);
                 },
-                .center_bottom_map_intercept => {
+                .center_bottom_map_intercept => |*center_bottom_map_intercept| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    center_bottom_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    center_bottom_map_intercept.has_row_end_reached_map_boundary_right = this_data.row_end.hasEqualX(&center_bottom_map_intercept.right_window_map_boundary);
                 },
             }
         }
@@ -1322,7 +1348,6 @@ const CaseHandler = struct {
                     .upper_side => |*upper_side| {
 
                         //ROW BEGIN
-
                         if (upper_side.has_row_begin_reached_map_boundary_upper) {
                             this_data.row_begin = isometric_math_utility.walkMapCoordSouthWestSingleMove(&this_data.row_begin) orelse return null;
                             this.current_coord = this_data.row_begin;
@@ -1445,25 +1470,36 @@ const CaseHandler = struct {
 
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
-                .upper_side => {
+                .upper_side => |*upper_side| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    upper_side.has_row_begin_reached_map_boundary_upper = this_data.row_begin.hasEqualX(&upper_side.upper_window_map_boundary);
+                    upper_side.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
-                .center => {
+                .center => |*center| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    center.has_row_begin_reached_map_boundary_upper = this_data.row_begin.hasEqualX(&center.upper_window_map_boundary);
+                    center.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
-                .bottom_side => {
+                .bottom_side => |*bottom_side| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    bottom_side.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
-                .center_leftside_map_intercept => {
+                .center_leftside_map_intercept => |*center_leftside_map_intercept| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
+
+                    center_leftside_map_intercept.has_row_begin_reached_map_boundary_upper = this_data.row_begin.hasEqualX(&center_leftside_map_intercept.upper_window_map_boundary);
+                    center_leftside_map_intercept.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
             }
         }
@@ -1608,21 +1644,32 @@ const CaseHandler = struct {
                     this_data.row_begin = upper_left.right_window_map_boundary;
                     this_data.row_end = upper_left.right_window_map_boundary;
                     this.current_coord = upper_left.right_window_map_boundary;
+
+                    upper_left.has_row_begin_reached_map_boundary_left = this_data.row_begin.hasEqualY(&upper_left.left_window_map_boundary);
+                    upper_left.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
                 .center => |*center| {
                     this_data.row_begin = center.most_top;
                     this_data.row_end = center.right_window_map_boundary;
                     this.current_coord = center.most_top;
+
+                    center.has_row_begin_reached_map_boundary_left = this_data.row_begin.hasEqualY(&center.left_window_map_boundary);
+                    center.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
                 .upper_right => |*upper_right| {
                     this_data.row_begin = upper_right.left_window_map_boundary;
                     this_data.row_end = upper_right.right_window_map_boundary;
                     this.current_coord = upper_right.left_window_map_boundary;
+
+                    upper_right.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
                 .center_upper_map_intercept => |*center_upper_map_intercept| {
                     this_data.row_begin = center_upper_map_intercept.upper_window_right_map_intercept;
                     this_data.row_end = center_upper_map_intercept.right_window_map_boundary;
                     this.current_coord = center_upper_map_intercept.upper_window_right_map_intercept;
+
+                    center_upper_map_intercept.has_row_begin_reached_map_boundary_upper_left = this_data.row_begin.hasEqualX(&center_upper_map_intercept.upper_window_left_map_intercept);
+                    center_upper_map_intercept.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
             }
         }
@@ -1735,8 +1782,8 @@ const CaseHandler = struct {
                             //CORNER REACHED
                             center_rightside_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                         }
-                        //ROW END
 
+                        //ROW END
                         if (center_rightside_map_intercept.has_row_end_reached_map_boundary_right_bottom and center_rightside_map_intercept.has_row_end_reached_map_boundary_bottom) {
                             this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_end) orelse return null;
                         }
@@ -1767,21 +1814,32 @@ const CaseHandler = struct {
                     this_data.row_begin = upper_side.upper_window_map_boundary;
                     this_data.row_end = upper_side.bottom_window_map_boundary;
                     this.current_coord = upper_side.upper_window_map_boundary;
+
+                    upper_side.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                 },
                 .center => |*center| {
                     this_data.row_begin = center.upper_window_map_boundary;
                     this_data.row_end = center.most_right;
                     this.current_coord = center.upper_window_map_boundary;
+
+                    center.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    center.has_row_end_reached_map_boundary_bottom = this_data.row_end.hasEqualY(&center.bottom_window_map_boundary);
                 },
                 .bottom_side => |*bottom_side| {
                     this_data.row_begin = bottom_side.upper_window_map_boundary;
                     this_data.row_end = bottom_side.upper_window_map_boundary;
                     this.current_coord = bottom_side.upper_window_map_boundary;
+
+                    bottom_side.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    bottom_side.has_row_end_reached_map_boundary_bottom = this_data.row_end.hasEqualY(&bottom_side.bottom_window_map_boundary);
                 },
                 .center_rightside_map_intercept => |*center_rightside_map_intercept| {
                     this_data.row_begin = center_rightside_map_intercept.upper_window_map_boundary;
                     this_data.row_end = center_rightside_map_intercept.right_window_upper_map_intercept;
                     this.current_coord = center_rightside_map_intercept.upper_window_map_boundary;
+
+                    center_rightside_map_intercept.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
+                    center_rightside_map_intercept.has_row_end_reached_map_boundary_right_bottom = this_data.row_end.hasEqualX(&center_rightside_map_intercept.right_window_bottom_map_intercept);
                 },
             }
         }
@@ -1862,16 +1920,22 @@ const CaseHandler = struct {
                     this_data.row_begin = intercepts_upper_right.upper_window_map_boundary;
                     this_data.row_end = intercepts_upper_right.most_right;
                     this.current_coord = intercepts_upper_right.upper_window_map_boundary;
+
+                    intercepts_upper_right.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                 },
                 .bottom_right => |*bottom_right| {
                     this_data.row_begin = bottom_right.upper_window_map_boundary;
                     this_data.row_end = bottom_right.upper_window_map_boundary;
                     this.current_coord = bottom_right.upper_window_map_boundary;
+
+                    bottom_right.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                 },
                 .intercepts_bottom_left => |*intercepts_bottom_left| {
                     this_data.row_begin = intercepts_bottom_left.upper_window_map_boundary;
                     this_data.row_end = intercepts_bottom_left.upper_window_map_boundary;
                     this.current_coord = intercepts_bottom_left.upper_window_map_boundary;
+
+                    intercepts_bottom_left.has_row_begin_reached_upper_left = this_data.row_begin.hasEqualX(&this_data.upper_left);
                 },
             }
         }
@@ -1936,20 +2000,25 @@ const CaseHandler = struct {
 
         if (this.current_coord == null) {
             switch (this_data.window_map_side_case) {
-                .intercepts_upper_left => {
+                .intercepts_upper_left => |*intercepts_upper_left| {
+                    this_data.row_begin = this_data.upper_right;
+                    this_data.row_end = this_data.upper_right;
+                    this.current_coord = this_data.upper_right;
+
+                    intercepts_upper_left.has_row_begin_reached_map_boundary_upper = this_data.row_begin.hasEqualX(&intercepts_upper_left.upper_window_map_boundary);
+                },
+                .bottom_left => |*bottom_left| {
+                    _ = bottom_left;
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
                 },
-                .bottom_left => {
+                .intercepts_bottom_right => |*intercepts_bottom_right| {
                     this_data.row_begin = this_data.upper_right;
                     this_data.row_end = this_data.upper_right;
                     this.current_coord = this_data.upper_right;
-                },
-                .intercepts_bottom_right => {
-                    this_data.row_begin = this_data.upper_right;
-                    this_data.row_end = this_data.upper_right;
-                    this.current_coord = this_data.upper_right;
+
+                    intercepts_bottom_right.has_row_end_reached_map_boundary_right = this_data.row_end.hasEqualX(&intercepts_bottom_right.right_window_map_boundary);
                 },
             }
         }
@@ -2028,16 +2097,22 @@ const CaseHandler = struct {
                     this_data.row_begin = intercepts_upper_right.right_window_map_boundary;
                     this_data.row_end = intercepts_upper_right.right_window_map_boundary;
                     this.current_coord = intercepts_upper_right.right_window_map_boundary;
+
+                    intercepts_upper_right.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
                 .upper_left => |*upper_left| {
                     this_data.row_begin = upper_left.right_window_map_boundary;
                     this_data.row_end = upper_left.right_window_map_boundary;
                     this.current_coord = upper_left.right_window_map_boundary;
+
+                    upper_left.has_row_end_reached_bottom_right = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
                 .intercepts_bottom_left => |*intercepts_bottom_left| {
                     this_data.row_begin = intercepts_bottom_left.right_window_map_boundary;
                     this_data.row_end = intercepts_bottom_left.right_window_map_boundary;
                     this.current_coord = intercepts_bottom_left.right_window_map_boundary;
+
+                    intercepts_bottom_left.has_row_end_reached_map_boundary_bottom = this_data.row_end.hasEqualX(&this_data.bottom_right);
                 },
             }
         }
@@ -2112,6 +2187,8 @@ const CaseHandler = struct {
                     this_data.row_begin = intercepts_upper_left.most_top;
                     this_data.row_end = intercepts_upper_left.bottom_window_map_boundary;
                     this.current_coord = intercepts_upper_left.most_top;
+
+                    intercepts_upper_left.has_row_begin_reached_map_boundary_left = this_data.row_begin.hasEqualY(&intercepts_upper_left.left_window_map_boundary);
                 },
                 .upper_right => |*upper_right| {
                     this_data.row_begin = upper_right.left_window_map_boundary;
@@ -2122,6 +2199,8 @@ const CaseHandler = struct {
                     this_data.row_begin = intercepts_bottom_right.left_window_map_boundary;
                     this_data.row_end = intercepts_bottom_right.most_right;
                     this.current_coord = intercepts_bottom_right.left_window_map_boundary;
+
+                    intercepts_bottom_right.has_row_end_reached_map_boundary_bottom = this_data.row_end.hasEqualY(&intercepts_bottom_right.bottom_window_map_boundary);
                 },
             }
         }
@@ -2152,39 +2231,49 @@ const CaseHandler = struct {
     }
 };
 
-// test "test detect case" {
-//     const window_on_map = CaseHandler.WindowOnMap{
-//         .bottom_left = true,
-//         .bottom_right = false,
-//         .upper_left = true,
-//         .upper_right = false,
-//     };
-//     const result = CaseHandler.detectCase(&window_on_map);
-//     std.debug.print("\n", .{});
-//     std.debug.print("{}", .{result});
-//     std.debug.print("\n", .{});
-// }
+test "test detect case" {
+    const window_on_map = CaseHandler.WindowOnMap{
+        .bottom_left = true,
+        .bottom_right = true,
+        .upper_left = true,
+        .upper_right = false,
+    };
+    const result = CaseHandler.detectCase(&window_on_map);
+    std.debug.print("\n", .{});
+    std.debug.print("{}", .{result});
+    std.debug.print("\n", .{});
+}
 
 const expect = std.testing.expect;
 
-fn getTestIsometricMathUtility() IsometricMathUtility {
-    return IsometricMathUtility.new(32, 16, 7, 8);
-}
-
-fn printTiles(tile_iterator:*TileIterator)void{
-
-
+fn printTiles(tile_iterator: *TileIterator) void {
     while (tile_iterator.next()) |tile| {
         std.debug.print("\n", .{});
         std.debug.print("x:{}, y:{}", .{ tile.map_array_coord_x, tile.map_array_coord_y });
     }
     std.debug.print("\n", .{});
-
 }
 
-fn checkSolution(tile_iterator:*TileIterator, solution:[]const Coord)!void{
+fn printSolution(tile_iterator: *TileIterator) void {
+    std.debug.print("\n", .{});
+    std.debug.print("\n", .{});
+    std.debug.print("const solution = [_]Coord{c}", .{'{'});
+    std.debug.print("\n", .{});
 
-    var index:usize = 0;
+    while (tile_iterator.next()) |tile| {
+        std.debug.print("Coord{c} .map_array_coord_x = {}, .map_array_coord_y = {} {c},", .{ '{', tile.map_array_coord_x, tile.map_array_coord_y, '}' });
+        std.debug.print("\n", .{});
+    }
+
+    std.debug.print("{c};", .{'}'});
+    std.debug.print("\n", .{});
+    std.debug.print("try checkSolution(&tile_iterator, solution[0..]);", .{});
+    std.debug.print("\n", .{});
+    std.debug.print("\n", .{});
+}
+
+fn checkSolution(tile_iterator: *TileIterator, solution: []const Coord) !void {
+    var index: usize = 0;
     while (tile_iterator.next()) |tile| {
         const sol = &solution[index];
         try expect(tile.map_array_coord_x == sol.map_array_coord_x and tile.map_array_coord_y == sol.map_array_coord_y);
@@ -2192,35 +2281,166 @@ fn checkSolution(tile_iterator:*TileIterator, solution:[]const Coord)!void{
     }
 }
 
+fn getTestIsometricMathUtility() IsometricMathUtility {
+    return IsometricMathUtility.new(32, 16, 7, 8);
+}
+
+fn getTestTileIteratorWideScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
+    return TileIterator.new(64, 32, isometric_math_utility, 0);
+}
+
+fn getTestTileIteratorNarrowScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
+    return TileIterator.new(48, 32, isometric_math_utility, 0);
+}
+
 test "test all_points" {
     var isometric_math_utility = getTestIsometricMathUtility();
-    var tile_iterator = TileIterator.new(64, 32, &isometric_math_utility, 0);
+    var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
     tile_iterator.initialize(-11, 41);
 
     const solution = [_]Coord{
-      Coord{.map_array_coord_x = 3, .map_array_coord_y = 1},
-      Coord{.map_array_coord_x = 2, .map_array_coord_y = 2},
-      Coord{.map_array_coord_x = 3, .map_array_coord_y = 2},
-      Coord{.map_array_coord_x = 4, .map_array_coord_y = 2},
-      Coord{.map_array_coord_x = 1, .map_array_coord_y = 3},
-      Coord{.map_array_coord_x = 2, .map_array_coord_y = 3},
-      Coord{.map_array_coord_x = 3, .map_array_coord_y = 3},
-      Coord{.map_array_coord_x = 4, .map_array_coord_y = 3},
-      Coord{.map_array_coord_x = 5, .map_array_coord_y = 3},
-      Coord{.map_array_coord_x = 2, .map_array_coord_y = 4},
-      Coord{.map_array_coord_x = 3, .map_array_coord_y = 4},
-      Coord{.map_array_coord_x = 4, .map_array_coord_y = 4},
-      Coord{.map_array_coord_x = 3, .map_array_coord_y = 5},
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 5 },
     };
 
     try checkSolution(&tile_iterator, solution[0..]);
-
 }
-test "test upperleft_upperright_bottomright" {}
-test "test upperright_bottomright_bottomleft" {}
-test "test bottomright_bottomleft_upperleft" {}
-test "test bottomleft_upperleft_upperright" {}
-test "test upperleft_upperright" {}
+
+test "test upperleft_upperright_bottomright" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
+    tile_iterator.initialize(-78, 71);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
+    };
+
+    try checkSolution(&tile_iterator, solution[0..]);
+}
+test "test upperright_bottomright_bottomleft" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
+    tile_iterator.initialize(-69, 13);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
+    };
+    try checkSolution(&tile_iterator, solution[0..]);
+}
+
+test "test bottomright_bottomleft_upperleft" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
+    tile_iterator.initialize(28, 18);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 2 },
+    };
+
+    try checkSolution(&tile_iterator, solution[0..]);
+}
+test "test bottomleft_upperleft_upperright" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
+    tile_iterator.initialize(47, 57);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 4 },
+    };
+    try checkSolution(&tile_iterator, solution[0..]);
+}
+test "test upperleft_upperright" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorNarrowScreen(&isometric_math_utility);
+
+    // bottom_left
+    tile_iterator.initialize(-87, 71);
+
+    const solution_bottom_left = [_]Coord{
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution_bottom_left[0..]);
+
+    // center
+    tile_iterator.initialize(-35, 99);
+    const solution_center = [_]Coord{
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution_center[0..]);
+
+    // bottom_right
+    tile_iterator.initialize(68, 59);
+
+    const solution_bottom_right = [_]Coord{
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 2 },
+    };
+    try checkSolution(&tile_iterator, solution_bottom_right[0..]);
+
+    // center_bottom_map_intercept
+    tile_iterator.initialize(-30, 85);
+    const solution_center_bottom_map_intercept = [_]Coord{
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution_center_bottom_map_intercept[0..]);
+}
 test "test upperright_bottomright" {}
 test "test bottomright_bottomleft" {}
 test "test bottomleft_upperleft" {}
