@@ -592,8 +592,8 @@ const CaseHandler = struct {
             this_data.window_map_side_case = .{ .center_bottom_map_intercept = .{
                 .right_window_map_boundary = isometric_math_utility.walkMapCoordFullSouth(&this_data.upper_right),
                 .left_window_map_boundary = isometric_math_utility.walkMapCoordFullSouth(&this_data.upper_left),
-                .bottom_window_left_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_bottom_win.bottom_left.yes, map_position_x, map_position_y).?,
-                .bottom_window_right_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_bottom_win.bottom_right.yes, map_position_x, map_position_y).?,
+                .bottom_window_left_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_bottom_win.bottom_left.yes, 0, 0).?,
+                .bottom_window_right_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_bottom_win.bottom_right.yes, 0, 0).?,
             } };
             return;
             //window is on the left side of the bottom tip of the map
@@ -632,8 +632,8 @@ const CaseHandler = struct {
             this_data.window_map_side_case = .{ .center_leftside_map_intercept = .{
                 .upper_window_map_boundary = isometric_math_utility.walkMapCoordFullWest(&this_data.upper_right),
                 .bottom_window_map_boundary = isometric_math_utility.walkMapCoordFullWest(&this_data.bottom_right),
-                .left_window_upper_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_left_win.upper_left.yes, map_position_x, map_position_y).?,
-                .left_window_bottom_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_left_win.bottom_left.yes, map_position_x, map_position_y).?,
+                .left_window_upper_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_left_win.upper_left.yes, 0, 0).?,
+                .left_window_bottom_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_left_win.bottom_left.yes, 0, 0).?,
             } };
             return;
             //window is on top of the left tip of the map
@@ -673,8 +673,8 @@ const CaseHandler = struct {
             this_data.window_map_side_case = .{ .center_upper_map_intercept = .{
                 .right_window_map_boundary = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_right),
                 .left_window_map_boundary = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_left),
-                .upper_window_left_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_upper_win.upper_left.yes, map_position_x, map_position_y).?,
-                .upper_window_right_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_upper_win.upper_right.yes, map_position_x, map_position_y).?,
+                .upper_window_left_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_upper_win.upper_left.yes, 0, 0).?,
+                .upper_window_right_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_upper_win.upper_right.yes, 0, 0).?,
             } };
             return;
             //window is on the left side of the upper tip of the map
@@ -696,7 +696,7 @@ const CaseHandler = struct {
             return;
             //window is on the right side of the map
         } else if (window_map_positions.upper_left.not_on_map.boundary_violation == Boundary.upper_right and window_map_positions.upper_right.not_on_map.boundary_violation == Boundary.upper_right) {
-            this_data.window_map_side_case = .{ .upper_left = .{
+            this_data.window_map_side_case = .{ .upper_right = .{
                 .right_window_map_boundary = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_right),
                 .left_window_map_boundary = isometric_math_utility.walkMapCoordFullNorth(&this_data.bottom_left),
             } };
@@ -718,8 +718,8 @@ const CaseHandler = struct {
             this_data.window_map_side_case = .{ .center_rightside_map_intercept = .{
                 .upper_window_map_boundary = isometric_math_utility.walkMapCoordFullEast(&this_data.upper_left),
                 .bottom_window_map_boundary = isometric_math_utility.walkMapCoordFullEast(&this_data.bottom_left),
-                .right_window_upper_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_right_win.upper_right.yes, map_position_x, map_position_y).?,
-                .right_window_bottom_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_right_win.bottom_right.yes, map_position_x, map_position_y).?,
+                .right_window_upper_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_right_win.upper_right.yes, 0, 0).?,
+                .right_window_bottom_map_intercept = isometric_math_utility.isoToMapCoord(map_side_intercepts_right_win.bottom_right.yes, 0, 0).?,
             } };
             return;
             //window is on the upper side of the right tip of the map
@@ -1387,7 +1387,7 @@ const CaseHandler = struct {
                         }
 
                         if (!center.has_row_begin_reached_map_boundary_upper) {
-                            this_data.row_begin = isometric_math_utility.walkMapCoordEastSingleMove(&this_data.row_begin) orelse return null;
+                            this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
                             this.current_coord = this_data.row_begin;
 
                             //CORNER REACHED
@@ -1410,8 +1410,8 @@ const CaseHandler = struct {
 
                         //ROW BEGIN
                         //END OF SCREEN
-                        this_data.row_end = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
-                        this.current_coord = this_data.row_end;
+                        this_data.row_begin = isometric_math_utility.walkMapCoordWestSingleMove(&this_data.row_begin) orelse return null;
+                        this.current_coord = this_data.row_begin;
 
                         //ROW END
                         if (bottom_side.has_row_end_reached_bottom_right) {
@@ -2289,6 +2289,10 @@ fn getTestTileIteratorWideScreen(isometric_math_utility: *IsometricMathUtility) 
     return TileIterator.new(64, 32, isometric_math_utility, 0);
 }
 
+fn getTestTileIteratorUltraWideScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
+    return TileIterator.new(80, 32, isometric_math_utility, 0);
+}
+
 fn getTestTileIteratorNarrowScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
     return TileIterator.new(48, 32, isometric_math_utility, 0);
 }
@@ -2441,13 +2445,191 @@ test "test upperleft_upperright" {
     };
     try checkSolution(&tile_iterator, solution_center_bottom_map_intercept[0..]);
 }
-test "test upperright_bottomright" {}
-test "test bottomright_bottomleft" {}
-test "test bottomleft_upperleft" {}
-test "test upperleft" {}
-test "test upperright" {}
-test "test bottomright" {}
-test "test bottomleft" {}
+test "test upperright_bottomright" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorUltraWideScreen(&isometric_math_utility);
+
+    // upper_side
+    tile_iterator.initialize(-74, 6);
+
+    const solution_upper_side = [_]Coord{
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 4 },
+    };
+    try checkSolution(&tile_iterator, solution_upper_side[0..]);
+
+    // center
+    tile_iterator.initialize(-115, 53);
+    const solution_center = [_]Coord{
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution_center[0..]);
+
+    //bottom_side
+    tile_iterator.initialize(-78, 86);
+
+    const solution_bottom_side = [_]Coord{
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution_bottom_side[0..]);
+
+    // center_leftside_map_intercept
+    tile_iterator.initialize(-104, 45);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 6 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
+    };
+    try checkSolution(&tile_iterator, solution[0..]);
+}
+
+test "test bottomright_bottomleft" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorNarrowScreen(&isometric_math_utility);
+
+    // upper_left
+    tile_iterator.initialize(-87, 20);
+
+    const solution_upper_left = [_]Coord{
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 3 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
+    };
+    try checkSolution(&tile_iterator, solution_upper_left[0..]);
+
+    // center
+    tile_iterator.initialize(-10, -4);
+
+    const solution_center = [_]Coord{
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 2 },
+    };
+    try checkSolution(&tile_iterator, solution_center[0..]);
+
+    // upper_right
+    tile_iterator.initialize(54, 12);
+    const solution_upper_right = [_]Coord{
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 4, .map_array_coord_y = 1 },
+    };
+    try checkSolution(&tile_iterator, solution_upper_right[0..]);
+
+    // center_upper_map_intercept
+    tile_iterator.initialize(-8, 9);
+    const solution_center_upper_map_intercept = [_]Coord{
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
+        Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 2, .map_array_coord_y = 2 },
+        Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
+    };
+    try checkSolution(&tile_iterator, solution_center_upper_map_intercept[0..]);
+}
+test "test bottomleft_upperleft" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorUltraWideScreen(&isometric_math_utility);
+
+    // // upper_side
+    // tile_iterator.initialize(41, 20);
+    // const solution_upper_side = [_]Coord{
+    //     Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
+    //     Coord{ .map_array_coord_x = 3, .map_array_coord_y = 0 },
+    //     Coord{ .map_array_coord_x = 4, .map_array_coord_y = 0 },
+    //     Coord{ .map_array_coord_x = 5, .map_array_coord_y = 0 },
+    //     Coord{ .map_array_coord_x = 6, .map_array_coord_y = 0 },
+    //     Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
+    //     Coord{ .map_array_coord_x = 4, .map_array_coord_y = 1 },
+    //     Coord{ .map_array_coord_x = 5, .map_array_coord_y = 1 },
+    //     Coord{ .map_array_coord_x = 4, .map_array_coord_y = 2 },
+    // };
+    // try checkSolution(&tile_iterator, solution_upper_side[0..]);
+
+    // center
+    tile_iterator.initialize(74, 31);
+    printTiles(&tile_iterator);
+    
+
+    // bottom_side
+    // center_rightside_map_intercept
+
+}
+test "test upperleft" {
+
+    // intercepts_upper_right
+    // bottom_right
+    // intercepts_bottom_left
+
+}
+test "test upperright" {
+
+    // intercepts_upper_left
+    // bottom_left
+    // intercepts_bottom_right
+
+}
+test "test bottomright" {
+
+    // intercepts_upper_right
+    // upper_left
+    // intercepts_bottom_left
+
+}
+test "test bottomleft" {
+
+    // intercepts_upper_left
+    // upper_right
+    // intercepts_bottom_right
+
+}
 test "test none" {}
 
 // has_row_begin_reached_upper_left 15 bool

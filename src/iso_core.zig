@@ -212,7 +212,7 @@ pub const IsometricMathUtility = struct {
     pub fn walkMapCoordFullSouth(this: *const @This(), coord: *const Coord) Coord {
         return walkMapCoordFurthestSouth(coord.map_array_coord_x, coord.map_array_coord_y, this.map_tiles_width, this.map_tiles_height);
     }
-    pub fn walkFullSouthWest(this: *const @This(), coord: *const Coord) Coord {
+    pub fn walkFullCoordSouthWest(this: *const @This(), coord: *const Coord) Coord {
         return walkFurthestSouthWest(coord.map_array_coord_x, this.map_tiles_height);
     }
     pub fn walkMapCoordFullWest(this: *const @This(), coord: *const Coord) Coord {
@@ -220,6 +220,6 @@ pub const IsometricMathUtility = struct {
     }
     pub fn walkMapCoordFullNorthWest(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
-        return walkMapCoordFurthestNorth(coord.map_array_coord_x, coord.map_array_coord_y);
+        return walkMapCoordFurthestNorthWest( coord.map_array_coord_y);
     }
 };

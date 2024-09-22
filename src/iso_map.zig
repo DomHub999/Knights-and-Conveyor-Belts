@@ -113,23 +113,24 @@ fn mapBoundaries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Ma
 // Determines whether a given point is on a map or out of bounds.
 // If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds,
 // as well as the coordinates on the boundary, if the point were to be moved towards the map's inbounds.
+// disclaimer: spot_x_boundry_intersect and spot_y_boundry_intersect is not a point or coordinate. They represent where the point intersects the boundary if extended either in the x or y direction toward the boundary!
 pub const Boundary = enum { upper_right, bottom_right, bottom_left, upper_left };
-const BoundarySpot = struct { spot: Point, boundary_violation: Boundary };
+const BoundarySpot = struct { spot_x_boundry_intersect: f32, spot_y_boundry_intersect: f32, boundary_violation: Boundary }; 
 pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundarySpot };
 pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
     const map_boundaries = mapBoundaries(x, y, map_side_equations);
 
     if (x > map_boundaries.upper_right_x and y < map_boundaries.upper_right_y) {
-        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.upper_right_x, .y = map_boundaries.upper_right_y }, .boundary_violation = .upper_right } };
+        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect = map_boundaries.upper_right_x, .spot_y_boundry_intersect = map_boundaries.upper_right_y, .boundary_violation = .upper_right } };
     }
     if (x > map_boundaries.bottom_right_x and y > map_boundaries.bottom_right_y) {
-        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.bottom_right_x, .y = map_boundaries.bottom_right_y }, .boundary_violation = .bottom_right } };
+        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect =  map_boundaries.bottom_right_x, .spot_y_boundry_intersect =  map_boundaries.bottom_right_y, .boundary_violation = .bottom_right } };
     }
     if (x < map_boundaries.bottom_left_x and y > map_boundaries.bottom_left_y) {
-        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.bottom_left_x, .y = map_boundaries.bottom_left_y }, .boundary_violation = .bottom_left } };
+        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect = map_boundaries.bottom_left_x, .spot_y_boundry_intersect = map_boundaries.bottom_left_y , .boundary_violation = .bottom_left } };
     }
     if (x < map_boundaries.upper_left_x and y < map_boundaries.upper_left_y) {
-        return PointPosition{ .not_on_map = .{ .spot = .{ .x = map_boundaries.upper_left_x, .y = map_boundaries.upper_left_y }, .boundary_violation = .upper_left } };
+        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect =  map_boundaries.upper_left_x, .spot_y_boundry_intersect =  map_boundaries.upper_left_y, .boundary_violation = .upper_left } };
     }
 
     return PointPosition.on_map;
@@ -205,6 +206,8 @@ test "map dimensions" {
     try expect(map_dimensions.left.y == 4);
 }
 
+
+//TODO: make test which checks for the spot_x_boundry_intersect and spot_y_boundry_intersect
 test "is point on map" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
