@@ -14,6 +14,8 @@ const PointPosition = @import("iso_map.zig").PointPosition;
 const isPointOnMap = @import("iso_map.zig").isPointOnMap;
 const MapSideIntercepts = @import("iso_map.zig").MapSideIntercepts;
 const doesLineInterceptMapBoundries = @import("iso_map.zig").doesLineInterceptMapBoundries;
+const pointOutsideMapSide = @import("iso_map.zig").pointOutsideMapSide;
+const Mapside = @import("iso_map.zig").Mapside;
 
 const LinearEquation = @import("iso_util.zig").LinearEquation;
 
@@ -126,15 +128,13 @@ pub const IsometricMathUtility = struct {
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
     }
 
-    pub fn isIsoPointOnMap(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) PointPosition {
+    pub fn isIsoPointOnMap(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) bool {
         const iso_pix_map_pos_adj = this.adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
 
         return isPointOnMap(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, &this.map_side_equations);
     }
 
     pub fn doesLineInterceptMap(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) MapSideIntercepts {
-        // const line_start_map_pos_adj = Point{ .x = line_start.x + @as(f32, @floatFromInt(map_pos_x)), .y = line_start.y + @as(f32, @floatFromInt(map_pos_y)) };
-        // const line_end_map_pos_adj = Point{ .x = line_end.x + @as(f32, @floatFromInt(map_pos_x)), .y = line_end.y + @as(f32, @floatFromInt(map_pos_y)) };
         const line_start_map_pos_adj = this.adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
         const line_end_map_pos_adj = this.adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
 
@@ -144,6 +144,12 @@ pub const IsometricMathUtility = struct {
         };
 
         return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, &line_pos_adj, &line_start_map_pos_adj, &line_end_map_pos_adj);
+    }
+
+    pub fn getPointOutsideMapSide(this: *const @This(), iso_pix:Point, map_pos_x:i32, map_pos_y:i32) Mapside {
+        const iso_pix_map_pos_adj = this.adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
+
+        return pointOutsideMapSide(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, &this.map_side_equations);
     }
 
     //TODO: take a pointer for point

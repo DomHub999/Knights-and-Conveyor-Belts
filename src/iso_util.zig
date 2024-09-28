@@ -61,6 +61,8 @@ pub fn findLinearY(m: f32, x: f32, b: f32) f32 {
     return m * x + b;
 }
 
+
+//TODO: return error instead of optional
 const FLOAT_EQUALITY_THRESHOLD: f32 = 0.01;
 pub fn lineIntercept(line1: *const LinearEquation, line2: *const LinearEquation) ?Point {
     const case_handler = getLinearEquationCombCase(line1, line2);

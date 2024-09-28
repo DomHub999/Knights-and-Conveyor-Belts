@@ -49,8 +49,8 @@ pub fn mapSideEquations(map_dimensions: *const MapDimensions) MapSideEquations {
     var map_side_equations: MapSideEquations = .{
         .upper_right = .{ .has_slope = undefined },
         .bottom_right = .{ .has_slope = undefined },
-        .bottom_left = .{ .has_slope  = undefined },
-        .upper_left = .{ .has_slope   = undefined },
+        .bottom_left = .{ .has_slope = undefined },
+        .upper_left = .{ .has_slope = undefined },
     };
 
     map_side_equations.upper_right.has_slope.m = slope(map_dimensions.top.x, map_dimensions.top.y, map_dimensions.right.x, map_dimensions.right.y);
@@ -93,7 +93,7 @@ const MapBoundaries = struct {
 //                    *
 fn mapBoundaries(x: f32, y: f32, map_side_equations: *const MapSideEquations) MapBoundaries {
     var map_boundaries: MapBoundaries = undefined;
-    const mse = map_side_equations; 
+    const mse = map_side_equations;
 
     map_boundaries.upper_right_x = findLinearX(mse.upper_right.has_slope.m, y, mse.upper_right.has_slope.b);
     map_boundaries.upper_right_y = findLinearY(mse.upper_right.has_slope.m, x, mse.upper_right.has_slope.b);
@@ -111,29 +111,37 @@ fn mapBoundaries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Ma
 }
 
 // Determines whether a given point is on a map or out of bounds.
-// If the given point is out of bounds, additional information is returned indicating on which side of the map the point lies out of bounds,
-// as well as the coordinates on the boundary, if the point were to be moved towards the map's inbounds.
-// disclaimer: spot_x_boundry_intersect and spot_y_boundry_intersect is not a point or coordinate. They represent where the point intersects the boundary if extended either in the x or y direction toward the boundary!
-pub const Boundary = enum { upper_right, bottom_right, bottom_left, upper_left };
-const BoundarySpot = struct { spot_x_boundry_intersect: f32, spot_y_boundry_intersect: f32, boundary_violation: Boundary }; 
-pub const PointPosition = union(enum) { on_map: void, not_on_map: BoundarySpot };
-pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) PointPosition {
+pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) bool {
     const map_boundaries = mapBoundaries(x, y, map_side_equations);
 
-    if (x > map_boundaries.upper_right_x and y < map_boundaries.upper_right_y) {
-        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect = map_boundaries.upper_right_x, .spot_y_boundry_intersect = map_boundaries.upper_right_y, .boundary_violation = .upper_right } };
-    }
-    if (x > map_boundaries.bottom_right_x and y > map_boundaries.bottom_right_y) {
-        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect =  map_boundaries.bottom_right_x, .spot_y_boundry_intersect =  map_boundaries.bottom_right_y, .boundary_violation = .bottom_right } };
-    }
-    if (x < map_boundaries.bottom_left_x and y > map_boundaries.bottom_left_y) {
-        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect = map_boundaries.bottom_left_x, .spot_y_boundry_intersect = map_boundaries.bottom_left_y , .boundary_violation = .bottom_left } };
-    }
-    if (x < map_boundaries.upper_left_x and y < map_boundaries.upper_left_y) {
-        return PointPosition{ .not_on_map = .{ .spot_x_boundry_intersect =  map_boundaries.upper_left_x, .spot_y_boundry_intersect =  map_boundaries.upper_left_y, .boundary_violation = .upper_left } };
-    }
+    const outside_upper_right_boundry = x > map_boundaries.upper_right_x and y < map_boundaries.upper_right_y;
+    const outside_bottom_right_boundry = x > map_boundaries.bottom_right_x and y > map_boundaries.bottom_right_y;
+    const outside_bottom_left_boundry = x < map_boundaries.bottom_left_x and y > map_boundaries.bottom_left_y;
+    const outside_upper_left_boundry = x < map_boundaries.upper_left_x and y < map_boundaries.upper_left_y;
 
-    return PointPosition.on_map;
+    return !outside_upper_right_boundry and !outside_bottom_right_boundry and !outside_bottom_left_boundry and !outside_upper_left_boundry;
+}
+
+pub const Mapside = enum {
+    upper_right,
+    bottom_right,
+    bottom_left,
+    upper_left,
+};
+
+//Does not necessarily work for points outside of the map because the map may not be symmetrical, potentially introducing blind spots
+pub fn pointOutsideMapSide(x:f32, y:f32, map_side_equations: *const MapSideEquations) Mapside {
+    const map_right_point = lineIntercept(&map_side_equations.upper_right, &map_side_equations.bottom_right).?;
+    const map_bottom_point = lineIntercept(&map_side_equations.bottom_right, &map_side_equations.bottom_left).?;
+    const map_left_point = lineIntercept(&map_side_equations.bottom_left, &map_side_equations.upper_left).?;
+    const map_top_point = lineIntercept(&map_side_equations.upper_left, &map_side_equations.upper_right).?;
+
+    if (x >= map_top_point.x and y < map_right_point.y) return .upper_right;
+    if (x >= map_bottom_point.x and y >= map_right_point.y) return .bottom_right;
+    if (x < map_bottom_point.x and y >= map_left_point.y) return .bottom_left;
+    if (x < map_top_point.x and y < map_left_point.y) return .upper_left;
+
+    unreachable; 
 }
 
 const Intercept = union(enum) {
@@ -182,7 +190,7 @@ fn isPointWithinLine(point: *const Point, line_start: *const Point, line_end: *c
 
 const expect = @import("std").testing.expect;
 
-test "map dimensions" {
+test "test map dimensions" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
     const map_tiles_width: f32 = 3;
@@ -206,9 +214,8 @@ test "map dimensions" {
     try expect(map_dimensions.left.y == 4);
 }
 
-
 //TODO: make test which checks for the spot_x_boundry_intersect and spot_y_boundry_intersect
-test "is point on map" {
+test "test is point on map" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
     const map_tiles_width: f32 = 3;
@@ -240,18 +247,18 @@ test "is point on map" {
     const is_not_on_map_3 = isPointOnMap(point_not_on_map_3.x, point_not_on_map_3.y, &map_side_equations);
     const is_not_on_map_4 = isPointOnMap(point_not_on_map_4.x, point_not_on_map_4.y, &map_side_equations);
 
-    try expect(is_on_map_1 == .on_map);
-    try expect(is_on_map_2 == .on_map);
-    try expect(is_on_map_3 == .on_map);
-    try expect(is_on_map_4 == .on_map);
+    try expect(is_on_map_1);
+    try expect(is_on_map_2);
+    try expect(is_on_map_3);
+    try expect(is_on_map_4);
 
-    try expect(is_not_on_map_1 == .not_on_map);
-    try expect(is_not_on_map_2 == .not_on_map);
-    try expect(is_not_on_map_3 == .not_on_map);
-    try expect(is_not_on_map_4 == .not_on_map);
+    try expect(!is_not_on_map_1);
+    try expect(!is_not_on_map_2);
+    try expect(!is_not_on_map_3);
+    try expect(!is_not_on_map_4);
 }
 
-test "line intercept boundary" {
+test "test line intercept boundary" {
     const tile_pix_width: f32 = 8;
     const diamond_pix_height: f32 = 4;
     const map_tiles_width: f32 = 3;
@@ -272,7 +279,7 @@ test "line intercept boundary" {
     try expect(result.bottom_left == .no);
     try expect(result.upper_left.yes.x == 0 and result.upper_left.yes.y == 2);
 
-    line = LinearEquation{ .has_slope  = .{ .m = 0, .b = 9 } };
+    line = LinearEquation{ .has_slope = .{ .m = 0, .b = 9 } };
     line_start = Point{ .x = 1, .y = 9 };
     line_end = Point{ .x = 8, .y = 9 };
     result = doesLineInterceptMapBoundries(&map_side_equations, &map_dimensions, &line, &line_start, &line_end);
@@ -284,7 +291,7 @@ test "line intercept boundary" {
     //TODO: use this test to test iso_core: it should be possible to translate the iso Point
     //coming from an intercept to a map array Coordinate
     const isometric_math_utility = @import("iso_core.zig").IsometricMathUtility.new(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height);
-    const point_to_coord = isometric_math_utility.isoToMapCoord(Point{.x = result.bottom_left.yes.x, .y = result.bottom_left.yes.y}, 0, 0).?;
+    const point_to_coord = isometric_math_utility.isoToMapCoord(Point{ .x = result.bottom_left.yes.x, .y = result.bottom_left.yes.y }, 0, 0).?;
     _ = point_to_coord;
 
     line = LinearEquation{ .has_slope = .{ .m = 0, .b = 9 } };
@@ -322,4 +329,29 @@ test "line intercept boundary" {
     try expect(result.bottom_right == .no);
     try expect(result.bottom_left == .no);
     try expect(result.upper_left == .no);
+}
+
+test "test pointOutsideMapSide"{
+    const tile_pix_width: f32 = 32;
+    const diamond_pix_height: f32 = 16;
+    const map_tiles_width: f32 = 7;
+    const map_tiles_height: f32 = 8;
+
+    const map_coord_to_iso_inc_x = mapCoordToIsoPixIncX(tile_pix_width);
+    const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(diamond_pix_height);
+
+    const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
+    const map_side_equations = mapSideEquations(&map_dimensions);
+
+
+    const upper_right = pointOutsideMapSide(128, 50, &map_side_equations);
+    const bottom_right = pointOutsideMapSide(49, 106, &map_side_equations);
+    const bottom_left = pointOutsideMapSide(-38, 129, &map_side_equations);
+    const upper_left = pointOutsideMapSide(-105, 2, &map_side_equations);
+
+    try expect(upper_right == Mapside.upper_right );
+    try expect(bottom_right == Mapside.bottom_right);
+    try expect(bottom_left == Mapside.bottom_left);
+    try expect(upper_left == Mapside.upper_left);
+
 }
