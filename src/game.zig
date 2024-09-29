@@ -5,7 +5,7 @@ const resources = @import("resources.zig");
 const util = @import("utility.zig");
 const deal_with_key_pressed = @import("user_input.zig").deal_with_key_pressed;
 
-const MUL:usize = 5;
+const MUL:usize = 20; //5
 const MAP_TILE_WIDTH: usize = 10 * MUL;
 const MAP_TILE_HEIGHT: usize = 10 * MUL;
 
@@ -14,6 +14,15 @@ const WINDOW_PIX_HEIGHT: i32 = 600 * 2;
 
 const TILE_PIX_WIDTH: f32 = 64;
 const TILE_PIX_HEIGHT: f32 = 32;
+
+// const MAP_TILE_WIDTH: usize = 7; 
+// const MAP_TILE_HEIGHT: usize = 8; 
+
+// const WINDOW_PIX_WIDTH: i32 = 48;
+// const WINDOW_PIX_HEIGHT: i32 = 32;
+
+// const TILE_PIX_WIDTH: f32 = 32;
+// const TILE_PIX_HEIGHT: f32 = 16;
 
 const MAP_MOVEMENT_SPEED:i32 = 1;
 

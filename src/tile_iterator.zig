@@ -29,7 +29,7 @@ pub const TileIterator = struct {
     //TODO: implement the margin (additional tiles to be considered out of bounds)
     margin: usize,
 
-    isometric_math_utility: *IsometricMathUtility,
+    isometric_math_utility: IsometricMathUtility,
     window_pix_width: i32,
     window_pix_height: i32,
 
@@ -40,7 +40,7 @@ pub const TileIterator = struct {
     pub fn new(
         window_pix_width: i32,
         window_pix_height: i32,
-        isometric_math_utility: *IsometricMathUtility,
+        isometric_math_utility: IsometricMathUtility,
         margin: usize,
     ) @This() {
         const this_window_corner_points = WindowCornerPoints{
@@ -68,11 +68,11 @@ pub const TileIterator = struct {
             .bottom_left = this.isometric_math_utility.isIsoPointOnMap(this.window_corner_points.bottom_left, window_position_x, window_position_y),
         };
 
-        this.case_handler = CaseHandler.new(this.isometric_math_utility, &this.window_corner_points, &window_corner_points_on_map, window_position_x, window_position_y);
+        this.case_handler = CaseHandler.new(&this.isometric_math_utility, &this.window_corner_points, &window_corner_points_on_map, window_position_x, window_position_y);
     }
 
     pub fn next(this: *@This()) ?Coord {
-        return this.case_handler.get_next_tile_coord(&this.case_handler, this.isometric_math_utility);
+        return this.case_handler.get_next_tile_coord(&this.case_handler, &this.isometric_math_utility);
     }
 };
 
@@ -2301,15 +2301,15 @@ fn getTestIsometricMathUtility() IsometricMathUtility {
 }
 
 fn getTestTileIteratorWideScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
-    return TileIterator.new(64, 32, isometric_math_utility, 0);
+    return TileIterator.new(64, 32, isometric_math_utility.*, 0);
 }
 
 fn getTestTileIteratorUltraWideScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
-    return TileIterator.new(80, 32, isometric_math_utility, 0);
+    return TileIterator.new(80, 32, isometric_math_utility.*, 0);
 }
 
 fn getTestTileIteratorNarrowScreen(isometric_math_utility: *IsometricMathUtility) TileIterator {
-    return TileIterator.new(48, 32, isometric_math_utility, 0);
+    return TileIterator.new(48, 32, isometric_math_utility.*, 0);
 }
 
 test "test all_points" {
@@ -2334,6 +2334,11 @@ test "test all_points" {
     };
 
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .all_points => try expect(true),
+        else => try expect(false),
+    }
 }
 
 test "test upperleft_upperright_bottomright" {
@@ -2354,6 +2359,11 @@ test "test upperleft_upperright_bottomright" {
     };
 
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .upperleft_upperright_bottomright => try expect(true),
+        else => try expect(false),
+    }
 }
 test "test upperright_bottomright_bottomleft" {
     var isometric_math_utility = getTestIsometricMathUtility();
@@ -2371,7 +2381,13 @@ test "test upperright_bottomright_bottomleft" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
     };
+
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .upperright_bottomright_bottomleft => try expect(true),
+        else => try expect(false),
+    }
 }
 
 test "test bottomright_bottomleft_upperleft" {
@@ -2392,6 +2408,11 @@ test "test bottomright_bottomleft_upperleft" {
     };
 
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .bottomright_bottomleft_upperleft => try expect(true),
+        else => try expect(false),
+    }
 }
 test "test bottomleft_upperleft_upperright" {
     var isometric_math_utility = getTestIsometricMathUtility();
@@ -2409,7 +2430,13 @@ test "test bottomleft_upperleft_upperright" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 3 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 4 },
     };
+
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .bottomleft_upperleft_upperright => try expect(true),
+        else => try expect(false),
+    }
 }
 test "test upperleft_upperright" {
     var isometric_math_utility = getTestIsometricMathUtility();
@@ -2424,7 +2451,13 @@ test "test upperleft_upperright" {
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_left[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft_upperright.window_map_side_case) {
+        .bottom_left => try expect(true),
+        else => try expect(false),
+    }
 
     // center
     tile_iterator.initialize(-35, 99);
@@ -2433,7 +2466,13 @@ test "test upperleft_upperright" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_center[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft_upperright.window_map_side_case) {
+        .center => try expect(true),
+        else => try expect(false),
+    }
 
     // bottom_right
     tile_iterator.initialize(68, 59);
@@ -2444,7 +2483,13 @@ test "test upperleft_upperright" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 2 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_right[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft_upperright.window_map_side_case) {
+        .bottom_right => try expect(true),
+        else => try expect(false),
+    }
 
     // center_bottom_map_intercept
     tile_iterator.initialize(-30, 85);
@@ -2458,7 +2503,13 @@ test "test upperleft_upperright" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_center_bottom_map_intercept[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft_upperright.window_map_side_case) {
+        .center_bottom_map_intercept => try expect(true),
+        else => try expect(false),
+    }
 }
 test "test upperright_bottomright" {
     var isometric_math_utility = getTestIsometricMathUtility();
@@ -2478,7 +2529,13 @@ test "test upperright_bottomright" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 4 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_side[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright_bottomright.window_map_side_case) {
+        .upper_side => try expect(true),
+        else => try expect(false),
+    }
 
     // center
     tile_iterator.initialize(-115, 53);
@@ -2495,7 +2552,13 @@ test "test upperright_bottomright" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_center[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright_bottomright.window_map_side_case) {
+        .center => try expect(true),
+        else => try expect(false),
+    }
 
     //bottom_side
     tile_iterator.initialize(-78, 86);
@@ -2511,7 +2574,13 @@ test "test upperright_bottomright" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_side[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright_bottomright.window_map_side_case) {
+        .bottom_side => try expect(true),
+        else => try expect(false),
+    }
 
     // center_leftside_map_intercept
     tile_iterator.initialize(-104, 45);
@@ -2529,7 +2598,13 @@ test "test upperright_bottomright" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright_bottomright.window_map_side_case) {
+        .center_leftside_map_intercept => try expect(true),
+        else => try expect(false),
+    }
 }
 
 test "test bottomright_bottomleft" {
@@ -2545,7 +2620,13 @@ test "test bottomright_bottomleft" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_left[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright_bottomleft.window_map_side_case) {
+        .upper_left => try expect(true),
+        else => try expect(false),
+    }
 
     // center
     tile_iterator.initialize(-10, -4);
@@ -2559,7 +2640,13 @@ test "test bottomright_bottomleft" {
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 2 },
     };
+
     try checkSolution(&tile_iterator, solution_center[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright_bottomleft.window_map_side_case) {
+        .center => try expect(true),
+        else => try expect(false),
+    }
 
     // upper_right
     tile_iterator.initialize(54, 12);
@@ -2571,7 +2658,13 @@ test "test bottomright_bottomleft" {
         Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
         Coord{ .map_array_coord_x = 4, .map_array_coord_y = 1 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_right[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright_bottomleft.window_map_side_case) {
+        .upper_right => try expect(true),
+        else => try expect(false),
+    }
 
     // center_upper_map_intercept
     tile_iterator.initialize(-8, 9);
@@ -2587,13 +2680,20 @@ test "test bottomright_bottomleft" {
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 2 },
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 3 },
     };
+
     try checkSolution(&tile_iterator, solution_center_upper_map_intercept[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright_bottomleft.window_map_side_case) {
+        .center_upper_map_intercept => try expect(true),
+        else => try expect(false),
+    }
 }
+
 test "test bottomleft_upperleft" {
     var isometric_math_utility = getTestIsometricMathUtility();
     var tile_iterator = getTestTileIteratorUltraWideScreen(&isometric_math_utility);
 
-    // // upper_side
+    // upper_side
     tile_iterator.initialize(41, 20);
     const solution_upper_side = [_]Coord{
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
@@ -2606,7 +2706,13 @@ test "test bottomleft_upperleft" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 1 },
         Coord{ .map_array_coord_x = 4, .map_array_coord_y = 2 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_side[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft_upperleft.window_map_side_case) {
+        .upper_side => try expect(true),
+        else => try expect(false),
+    }
 
     // center
     tile_iterator.initialize(74, 31);
@@ -2621,7 +2727,13 @@ test "test bottomleft_upperleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 2 },
     };
+
     try checkSolution(&tile_iterator, solution_center[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft_upperleft.window_map_side_case) {
+        .center => try expect(true),
+        else => try expect(false),
+    }
 
     // bottom_side
     tile_iterator.initialize(14, 79);
@@ -2637,7 +2749,13 @@ test "test bottomleft_upperleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 5 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 6 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_side[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft_upperleft.window_map_side_case) {
+        .bottom_side => try expect(true),
+        else => try expect(false),
+    }
 
     // center_rightside_map_intercept
     tile_iterator.initialize(37, 38);
@@ -2655,7 +2773,13 @@ test "test bottomleft_upperleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 2 },
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 3 },
     };
+
     try checkSolution(&tile_iterator, solution_center_rightside_map_intercept[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft_upperleft.window_map_side_case) {
+        .center_rightside_map_intercept => try expect(true),
+        else => try expect(false),
+    }
 }
 
 test "test upperleft" {
@@ -2670,7 +2794,13 @@ test "test upperleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 0 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_upper_right[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft.window_map_side_case) {
+        .intercepts_upper_right => try expect(true),
+        else => try expect(false),
+    }
 
     // bottom_right
     tile_iterator.initialize(22, 78);
@@ -2681,7 +2811,13 @@ test "test upperleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 4 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 5 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_right[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft.window_map_side_case) {
+        .bottom_right => try expect(true),
+        else => try expect(false),
+    }
 
     // intercepts_bottom_left
     tile_iterator.initialize(-12, 99);
@@ -2690,8 +2826,15 @@ test "test upperleft" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_bottom_left[0..]);
+
+    switch (tile_iterator.case_handler.data.upperleft.window_map_side_case) {
+        .intercepts_bottom_left => try expect(true),
+        else => try expect(false),
+    }
 }
+
 test "test upperright" {
     var isometric_math_utility = getTestIsometricMathUtility();
     var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
@@ -2707,6 +2850,11 @@ test "test upperright" {
 
     try checkSolution(&tile_iterator, solution_intercepts_upper_left[0..]);
 
+    switch (tile_iterator.case_handler.data.upperright.window_map_side_case) {
+        .intercepts_upper_left => try expect(true),
+        else => try expect(false),
+    }
+
     // bottom_left
     tile_iterator.initialize(-91, 82);
 
@@ -2716,7 +2864,15 @@ test "test upperright" {
         Coord{ .map_array_coord_x = 3, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 4, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_bottom_left[0..]);
+
+    try checkSolution(&tile_iterator, solution_intercepts_upper_left[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright.window_map_side_case) {
+        .bottom_left => try expect(true),
+        else => try expect(false),
+    }
 
     // intercepts_bottom_right
     tile_iterator.initialize(-50, 99);
@@ -2726,8 +2882,17 @@ test "test upperright" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_bottom_right[0..]);
+
+    try checkSolution(&tile_iterator, solution_intercepts_upper_left[0..]);
+
+    switch (tile_iterator.case_handler.data.upperright.window_map_side_case) {
+        .intercepts_bottom_right => try expect(true),
+        else => try expect(false),
+    }
 }
+
 test "test bottomright" {
     var isometric_math_utility = getTestIsometricMathUtility();
     var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
@@ -2741,7 +2906,13 @@ test "test bottomright" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 },
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 2 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_upper_right[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright.window_map_side_case) {
+        .intercepts_upper_right => try expect(true),
+        else => try expect(false),
+    }
 
     // upper_left
     tile_iterator.initialize(-90, 20);
@@ -2752,7 +2923,13 @@ test "test bottomright" {
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 4 },
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 5 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_left[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright.window_map_side_case) {
+        .upper_left => try expect(true),
+        else => try expect(false),
+    }
 
     // intercepts_bottom_left
     tile_iterator.initialize(-135, 42);
@@ -2762,7 +2939,13 @@ test "test bottomright" {
         Coord{ .map_array_coord_x = 0, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_bottom_left[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomright.window_map_side_case) {
+        .intercepts_bottom_left => try expect(true),
+        else => try expect(false),
+    }
 }
 
 test "test bottomleft" {
@@ -2778,7 +2961,13 @@ test "test bottomleft" {
         Coord{ .map_array_coord_x = 2, .map_array_coord_y = 0 },
         Coord{ .map_array_coord_x = 1, .map_array_coord_y = 1 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_upper_left[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft.window_map_side_case) {
+        .intercepts_upper_left => try expect(true),
+        else => try expect(false),
+    }
 
     // upper_right
     tile_iterator.initialize(43, 7);
@@ -2789,7 +2978,13 @@ test "test bottomleft" {
         Coord{ .map_array_coord_x = 4, .map_array_coord_y = 0 },
         Coord{ .map_array_coord_x = 3, .map_array_coord_y = 1 },
     };
+
     try checkSolution(&tile_iterator, solution_upper_right[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft.window_map_side_case) {
+        .upper_right => try expect(true),
+        else => try expect(false),
+    }
 
     // intercepts_bottom_right
     tile_iterator.initialize(87, 31);
@@ -2799,8 +2994,15 @@ test "test bottomleft" {
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 0 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 1 },
     };
+
     try checkSolution(&tile_iterator, solution_intercepts_bottom_right[0..]);
+
+    switch (tile_iterator.case_handler.data.bottomleft.window_map_side_case) {
+        .intercepts_bottom_right => try expect(true),
+        else => try expect(false),
+    }
 }
+
 test "test none" {
     var isometric_math_utility = getTestIsometricMathUtility();
     var tile_iterator = getTestTileIteratorWideScreen(&isometric_math_utility);
@@ -2811,8 +3013,13 @@ test "test none" {
     const solution_outside_map = [_]Coord{};
     try checkSolution(&tile_iterator, solution_outside_map[0..]);
 
+    switch (tile_iterator.case_handler.data) {
+        .none => try expect(true),
+        else => try expect(false),
+    }
+
     //screen larger than map
-    tile_iterator = TileIterator.new(260, 132, &isometric_math_utility, 0);
+    tile_iterator = TileIterator.new(260, 132, isometric_math_utility, 0);
     tile_iterator.initialize(-114, -1);
 
     const solution_larger_than_map = [_]Coord{
@@ -2873,7 +3080,28 @@ test "test none" {
         Coord{ .map_array_coord_x = 5, .map_array_coord_y = 7 },
         Coord{ .map_array_coord_x = 6, .map_array_coord_y = 7 },
     };
+
     try checkSolution(&tile_iterator, solution_larger_than_map[0..]);
+
+    switch (tile_iterator.case_handler.data) {
+        .none => try expect(true),
+        else => try expect(false),
+    }
+}
+
+test "test runtime bug 20240929" {
+    var isometric_math_utility = getTestIsometricMathUtility();
+    var tile_iterator = getTestTileIteratorNarrowScreen(&isometric_math_utility);
+    tile_iterator.initialize(0, 88);
+
+    const solution = [_]Coord{
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 4 },
+        Coord{ .map_array_coord_x = 5, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 5 },
+        Coord{ .map_array_coord_x = 6, .map_array_coord_y = 6 },
+    };
+
+    try checkSolution(&tile_iterator, solution[0..]);
 }
 
 // has_row_begin_reached_upper_left 15 bool

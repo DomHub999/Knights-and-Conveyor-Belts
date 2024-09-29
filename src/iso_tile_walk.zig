@@ -72,6 +72,12 @@ pub fn walkMapCoordFurthestNorthEast(map_array_coord_x: usize) Coord {
 pub fn walkMapCoordFurthestEast(map_array_coord_x: usize, map_array_coord_y: usize, map_tile_width: usize) Coord {
     const max_array_coord_x = map_tile_width - 1;
 
+    //TODO: remove debug statemenst
+    if (map_array_coord_x > max_array_coord_x) {
+        const i:usize = 100;
+        _ = i;
+    }
+
     if (map_array_coord_x + map_array_coord_y <= max_array_coord_x) {
         return .{ .map_array_coord_x = map_array_coord_x + map_array_coord_y, .map_array_coord_y = 0 };
     } else {

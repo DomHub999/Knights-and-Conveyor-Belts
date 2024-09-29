@@ -114,10 +114,10 @@ fn mapBoundaries(x: f32, y: f32, map_side_equations: *const MapSideEquations) Ma
 pub fn isPointOnMap(x: f32, y: f32, map_side_equations: *const MapSideEquations) bool {
     const map_boundaries = mapBoundaries(x, y, map_side_equations);
 
-    const outside_upper_right_boundry = x > map_boundaries.upper_right_x and y < map_boundaries.upper_right_y;
-    const outside_bottom_right_boundry = x > map_boundaries.bottom_right_x and y > map_boundaries.bottom_right_y;
-    const outside_bottom_left_boundry = x < map_boundaries.bottom_left_x and y > map_boundaries.bottom_left_y;
-    const outside_upper_left_boundry = x < map_boundaries.upper_left_x and y < map_boundaries.upper_left_y;
+    const outside_upper_right_boundry = x >= map_boundaries.upper_right_x and y <= map_boundaries.upper_right_y;
+    const outside_bottom_right_boundry = x >= map_boundaries.bottom_right_x and y >= map_boundaries.bottom_right_y;
+    const outside_bottom_left_boundry = x <= map_boundaries.bottom_left_x and y >= map_boundaries.bottom_left_y;
+    const outside_upper_left_boundry = x <= map_boundaries.upper_left_x and y <= map_boundaries.upper_left_y;
 
     return !outside_upper_right_boundry and !outside_bottom_right_boundry and !outside_bottom_left_boundry and !outside_upper_left_boundry;
 }
@@ -227,7 +227,7 @@ test "test is point on map" {
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
     const map_side_equations = mapSideEquations(&map_dimensions);
 
-    const point_on_map_1 = Point{ .x = 4, .y = 0 };
+    const point_on_map_1 = Point{ .x = 4, .y = 1 };
     const point_on_map_2 = Point{ .x = 4, .y = 7 };
     const point_on_map_3 = Point{ .x = 9, .y = 7 };
     const point_on_map_4 = Point{ .x = -3, .y = 4 };
