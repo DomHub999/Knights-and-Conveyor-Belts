@@ -67,8 +67,19 @@ pub const Map = struct {
         }
     }
 
+    //TODO:remove debug
+    var movement_break:usize = 0;
+    const MOVEMENT_MAX:usize = 0;
+
     pub const MovementDirection = enum { left, right, up, down };
     pub fn move(this: *@This(), direction: MovementDirection) void {
+
+        if(movement_break <= MOVEMENT_MAX){
+            movement_break += 1;
+            return;
+        }
+        movement_break = 0;
+
         switch (direction) {
             .left => {
                 this.map_position_x += this.map_movement_speed;
@@ -83,6 +94,8 @@ pub const Map = struct {
                 this.map_position_y -= this.map_movement_speed;
             },
         }
+
+
     }
 
     pub fn deinit(this: *@This()) void {

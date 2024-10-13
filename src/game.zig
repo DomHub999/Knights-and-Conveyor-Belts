@@ -5,7 +5,7 @@ const resources = @import("resources.zig");
 const util = @import("utility.zig");
 const deal_with_key_pressed = @import("user_input.zig").deal_with_key_pressed;
 
-const MUL:usize = 20; //5
+const MUL: usize = 10; //5
 const MAP_TILE_WIDTH: usize = 10 * MUL;
 const MAP_TILE_HEIGHT: usize = 10 * MUL;
 
@@ -15,8 +15,8 @@ const WINDOW_PIX_HEIGHT: i32 = 600 * 2;
 const TILE_PIX_WIDTH: f32 = 64;
 const TILE_PIX_HEIGHT: f32 = 32;
 
-// const MAP_TILE_WIDTH: usize = 7; 
-// const MAP_TILE_HEIGHT: usize = 8; 
+// const MAP_TILE_WIDTH: usize = 7;
+// const MAP_TILE_HEIGHT: usize = 8;
 
 // const WINDOW_PIX_WIDTH: i32 = 48;
 // const WINDOW_PIX_HEIGHT: i32 = 32;
@@ -24,10 +24,9 @@ const TILE_PIX_HEIGHT: f32 = 32;
 // const TILE_PIX_WIDTH: f32 = 32;
 // const TILE_PIX_HEIGHT: f32 = 16;
 
-const MAP_MOVEMENT_SPEED:i32 = 1;
+const MAP_MOVEMENT_SPEED: i32 = 1;
 
 pub fn runGame() !void {
-    
     var map = try Map.new(MAP_TILE_WIDTH, MAP_TILE_HEIGHT, TILE_PIX_WIDTH, TILE_PIX_HEIGHT, WINDOW_PIX_WIDTH, WINDOW_PIX_HEIGHT, MAP_MOVEMENT_SPEED);
     defer map.deinit();
 
@@ -42,7 +41,6 @@ pub fn runGame() !void {
     defer drawer.deinit();
 
     while (!drawer.exitCommand()) {
-
         deal_with_key_pressed(&map);
 
         drawer.initializeScreen();
@@ -57,17 +55,15 @@ pub fn runGame() !void {
 
 const ground_tiles = makeGroundTiles();
 
-fn makeGroundTiles()[MAP_TILE_WIDTH * MAP_TILE_HEIGHT]Ground{
+fn makeGroundTiles() [MAP_TILE_WIDTH * MAP_TILE_HEIGHT]Ground {
+    @setEvalBranchQuota(10000000);
 
-    @setEvalBranchQuota(100000);
-
-    var ground_tile:[MAP_TILE_WIDTH * MAP_TILE_HEIGHT]Ground = undefined;
+    var ground_tile: [MAP_TILE_WIDTH * MAP_TILE_HEIGHT]Ground = undefined;
 
     for (0..MAP_TILE_HEIGHT) |y| {
         for (0..MAP_TILE_WIDTH) |x| {
-
-            var tile_result:usize = @mod(x, 2);
-            if (@mod(y, 2) == 0){
+            var tile_result: usize = @mod(x, 2);
+            if (@mod(y, 2) == 0) {
                 tile_result = if (tile_result == 0) 1 else 0;
             }
 

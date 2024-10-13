@@ -130,11 +130,7 @@ pub const Mapside = enum {
 };
 
 //Does not necessarily work for points outside of the map because the map may not be symmetrical, potentially introducing blind spots
-pub fn pointOutsideMapSide(x:f32, y:f32, map_side_equations: *const MapSideEquations) Mapside {
-    const map_right_point = lineIntercept(&map_side_equations.upper_right, &map_side_equations.bottom_right).?;
-    const map_bottom_point = lineIntercept(&map_side_equations.bottom_right, &map_side_equations.bottom_left).?;
-    const map_left_point = lineIntercept(&map_side_equations.bottom_left, &map_side_equations.upper_left).?;
-    const map_top_point = lineIntercept(&map_side_equations.upper_left, &map_side_equations.upper_right).?;
+pub fn pointOutsideMapSide(x:f32, y:f32, map_right_point:*const Point, map_bottom_point:*const Point, map_left_point:*const Point, map_top_point:*const Point) Mapside {
 
     if (x >= map_top_point.x and y < map_right_point.y) return .upper_right;
     if (x >= map_bottom_point.x and y >= map_right_point.y) return .bottom_right;
@@ -144,6 +140,7 @@ pub fn pointOutsideMapSide(x:f32, y:f32, map_side_equations: *const MapSideEquat
     unreachable; 
 }
 
+//TODO: should not use types declared in iso_core -> reusability
 const Intercept = union(enum) {
     no: void,
     yes: Point,
@@ -169,7 +166,9 @@ pub fn doesLineInterceptMapBoundries(map_side_equations: *const MapSideEquations
     return map_side_intercepts;
 }
 
-fn determineIntercept(line: *const LinearEquation, map_side_equation: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_boundary_start: *const Point, map_boundary_end: *const Point) Intercept {
+//TODO: find better function name than determineIntercept
+//TODO: should return an optional "Point"
+pub fn determineIntercept(line: *const LinearEquation, map_side_equation: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_boundary_start: *const Point, map_boundary_end: *const Point) Intercept {
     var intercept: Intercept = .no;
     const intercept_point = lineIntercept(line, map_side_equation);
     if (intercept_point) |point| {
@@ -341,13 +340,11 @@ test "test pointOutsideMapSide"{
     const map_coord_to_iso_inc_y = mapCoordToIsoPixIncY(diamond_pix_height);
 
     const map_dimensions = mapDimensions(tile_pix_width, diamond_pix_height, map_tiles_width, map_tiles_height, map_coord_to_iso_inc_x, map_coord_to_iso_inc_y);
-    const map_side_equations = mapSideEquations(&map_dimensions);
 
-
-    const upper_right = pointOutsideMapSide(128, 50, &map_side_equations);
-    const bottom_right = pointOutsideMapSide(49, 106, &map_side_equations);
-    const bottom_left = pointOutsideMapSide(-38, 129, &map_side_equations);
-    const upper_left = pointOutsideMapSide(-105, 2, &map_side_equations);
+    const upper_right = pointOutsideMapSide(128, 50, &map_dimensions.right, &map_dimensions.bottom, &map_dimensions.left, &map_dimensions.top);
+    const bottom_right = pointOutsideMapSide(49, 106, &map_dimensions.right, &map_dimensions.bottom, &map_dimensions.left, &map_dimensions.top);
+    const bottom_left = pointOutsideMapSide(-38, 129, &map_dimensions.right, &map_dimensions.bottom, &map_dimensions.left, &map_dimensions.top);
+    const upper_left = pointOutsideMapSide(-105, 2, &map_dimensions.right, &map_dimensions.bottom, &map_dimensions.left, &map_dimensions.top);
 
     try expect(upper_right == Mapside.upper_right );
     try expect(bottom_right == Mapside.bottom_right);

@@ -16,8 +16,10 @@ const MapSideIntercepts = @import("iso_map.zig").MapSideIntercepts;
 const doesLineInterceptMapBoundries = @import("iso_map.zig").doesLineInterceptMapBoundries;
 const pointOutsideMapSide = @import("iso_map.zig").pointOutsideMapSide;
 const Mapside = @import("iso_map.zig").Mapside;
+const determineIntercept = @import("iso_map.zig").determineIntercept;
 
 const LinearEquation = @import("iso_util.zig").LinearEquation;
+const lineIntercept = @import("iso_util.zig").lineIntercept;
 
 const walkMapCoordNorth = @import("iso_tile_walk.zig").walkMapCoordNorth;
 const walkMapCoordNorthEast = @import("iso_tile_walk.zig").walkMapCoordNorthEast;
@@ -103,7 +105,7 @@ pub const IsometricMathUtility = struct {
         const iso_pix_x = mapCoordToIsoPixX(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_x);
         const iso_pix_y = mapCoordToIsoPixY(@as(f32, @floatFromInt(map_array_coord.map_array_coord_x)), @as(f32, @floatFromInt(map_array_coord.map_array_coord_y)), this.map_coord_to_iso_inc_y);
 
-        const iso_pix_map_pos_adj = this.adjustTileOriginPointInIsoToMapMovement(.{ .x = iso_pix_x, .y = iso_pix_y }, map_pos_x, map_pos_y);
+        const iso_pix_map_pos_adj = adjustTileOriginPointInIsoToMapMovement(.{ .x = iso_pix_x, .y = iso_pix_y }, map_pos_x, map_pos_y);
 
         return .{ .iso_pix_x = iso_pix_map_pos_adj.x, .iso_pix_y = iso_pix_map_pos_adj.y };
     }
@@ -111,66 +113,105 @@ pub const IsometricMathUtility = struct {
     //TODO:rename to isoPointToMapCoord, instead of returning null, return an error -> a map array coord cannot possibly be negative
     //HINT: The maps tile point of origin is to be moved into its initial position (without any "map movement") in order to be able to calculate its map coordinate
     pub fn isoToMapCoord(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) ?Coord {
-        const iso_pix_map_pos_adj = this.adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
+        const iso_pix_map_pos_adj = adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
 
-        var tile_position = tileIsoOriginPosition(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, this.tile_pix_width, this.diamond_pix_height, .upper);
+        const tile_position = tileIsoOriginPosition(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, this.tile_pix_width, this.diamond_pix_height, .upper);
         var map_array_coord_x = isoPixToMapCoordX(tile_position.tile_origin_iso_x, tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
         var map_array_coord_y = isoPixToMapCoordYLean(tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_y, map_array_coord_x);
 
-        if (map_array_coord_x < 0 or map_array_coord_y < 0) {
-            //in case that a point lies in a position where it cannot be detormined if the point belongs to the upper of lower tile
-            tile_position = tileIsoOriginPosition(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, this.tile_pix_width, this.diamond_pix_height, .lower);
-            map_array_coord_x = isoPixToMapCoordX(tile_position.tile_origin_iso_x, tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
-            map_array_coord_y = isoPixToMapCoordYLean(tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_y, map_array_coord_x);
+        //TODO:remove debug
+        if(map_array_coord_x == 50 and map_array_coord_y == 49){
+            // @breakpoint();
         }
 
-        if (map_array_coord_x < 0 or map_array_coord_y < 0) return null; //TODO:make this function return an error instead of null
+        if(map_array_coord_x == 50){
+            // @breakpoint();
+        }
+
+        // if (map_array_coord_y < 0 or map_array_coord_y > @as(f32, @floatFromInt(this.map_tiles_height - 1))) {
+        //     //in case that a point lies in a position where it cannot be detormined if the point belongs to the upper of lower tile
+        //     tile_position = tileIsoOriginPosition(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, this.tile_pix_width, this.diamond_pix_height, .lower);
+        //     map_array_coord_x = isoPixToMapCoordX(tile_position.tile_origin_iso_x, tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_x, this.map_coord_to_iso_inc_y);
+        //     map_array_coord_y = isoPixToMapCoordYLean(tile_position.tile_origin_iso_y, this.map_coord_to_iso_inc_y, map_array_coord_x);
+        // }
+        
+        if(map_array_coord_y < 0) map_array_coord_y += 1;
+        if(map_array_coord_y > @as(f32, @floatFromInt(this.map_tiles_height - 1))) map_array_coord_y -= 1;
+        if (map_array_coord_x < 0) map_array_coord_x += 1;
+        if(map_array_coord_x > @as(f32, @floatFromInt(this.map_tiles_width - 1))) map_array_coord_x -= 1;
+
+        if (map_array_coord_x < 0 or map_array_coord_y < 0 or map_array_coord_y > @as(f32, @floatFromInt(this.map_tiles_height - 1)) or map_array_coord_x > @as(f32, @floatFromInt(this.map_tiles_width - 1))) return null; //TODO:make this function return an error instead of null
         return .{ .map_array_coord_x = @intFromFloat(map_array_coord_x), .map_array_coord_y = @intFromFloat(map_array_coord_y) };
     }
 
     pub fn isIsoPointOnMap(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) bool {
-        const iso_pix_map_pos_adj = this.adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
+        const iso_pix_map_pos_adj = adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
 
         return isPointOnMap(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, &this.map_side_equations);
     }
 
     pub fn doesLineInterceptMap(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) MapSideIntercepts {
-        const line_start_map_pos_adj = this.adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
-        const line_end_map_pos_adj = this.adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
-
-        const line_pos_adj: LinearEquation = switch (line.*) {
-            .has_slope => .{ .has_slope = .{ .m = line.has_slope.m, .b = this.adjustWindowIsoPointToMapPositionY(line.has_slope.b, map_pos_y) } },
-            .vertical => .{ .vertical = .{.a = this.adjustWindowIsoPointToMapPositionX(line.vertical.a, map_pos_x) } },
-        };
+        const line_start_map_pos_adj = adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
+        const line_end_map_pos_adj = adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
+        const line_pos_adj = adjustLineToWindowPosition(line, map_pos_x, map_pos_y);
 
         return doesLineInterceptMapBoundries(&this.map_side_equations, &this.map_dimensions, &line_pos_adj, &line_start_map_pos_adj, &line_end_map_pos_adj);
     }
 
-    pub fn getPointOutsideMapSide(this: *const @This(), iso_pix:Point, map_pos_x:i32, map_pos_y:i32) Mapside {
-        const iso_pix_map_pos_adj = this.adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
+    pub fn getPointOutsideMapSide(this: *const @This(), iso_pix: Point, map_pos_x: i32, map_pos_y: i32) Mapside {
+        const iso_pix_map_pos_adj = adjustWindowIsoPointToMapPosition(iso_pix, map_pos_x, map_pos_y);
 
-        return pointOutsideMapSide(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, &this.map_side_equations);
+        return pointOutsideMapSide(iso_pix_map_pos_adj.x, iso_pix_map_pos_adj.y, &this.map_dimensions.right, &this.map_dimensions.bottom, &this.map_dimensions.left, &this.map_dimensions.top);
     }
 
-    //TODO: take a pointer for point
-    pub fn adjustWindowIsoPointToMapPosition(this: *const @This(), point: Point, map_pos_x: i32, map_pos_y: i32) Point {
-        // return .{ .x = point.x + @as(f32, @floatFromInt(map_pos_x)), .y = point.y + @as(f32, @floatFromInt(map_pos_y)) };
-        return .{ .x = this.adjustWindowIsoPointToMapPositionX(point.x, map_pos_x), .y = this.adjustWindowIsoPointToMapPositionY(point.y, map_pos_y) };
-    }
+    pub fn coordLineIntercepsMapUpperRight(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) Coord {
+        const line_start_map_pos_adj = adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
+        const line_end_map_pos_adj = adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
+        const line_pos_adj = adjustLineToWindowPosition(line, map_pos_x, map_pos_y);
 
-    pub fn adjustWindowIsoPointToMapPositionX(this: *const @This(), x: f32, map_pos_x: i32) f32 {
-        _ = this;
-        return x + @as(f32, @floatFromInt(map_pos_x));
-    }
+        const does_intercept = determineIntercept(&line_pos_adj, &this.map_side_equations.upper_right, &line_start_map_pos_adj, &line_end_map_pos_adj, &this.map_dimensions.top, &this.map_dimensions.right);
 
-    pub fn adjustWindowIsoPointToMapPositionY(this: *const @This(), y: f32, map_pos_y: i32) f32 {
-        _ = this;
-        return y + @as(f32, @floatFromInt(map_pos_y));
-    }
+        const map_coord = this.isoToMapCoord(does_intercept.yes, 0, 0).?;
 
-    pub fn adjustTileOriginPointInIsoToMapMovement(this: *const @This(), point: Point, map_pos_x: i32, map_pos_y: i32) Point {
-        _ = this;
-        return .{ .x = point.x - @as(f32, @floatFromInt(map_pos_x)), .y = point.y - @as(f32, @floatFromInt(map_pos_y)) };
+        return map_coord;
+    }
+    pub fn coordLineIntercepsMapBottomRight(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) Coord {
+        const line_start_map_pos_adj = adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
+        const line_end_map_pos_adj = adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
+        const line_pos_adj = adjustLineToWindowPosition(line, map_pos_x, map_pos_y);
+
+        const does_intercept = determineIntercept(&line_pos_adj, &this.map_side_equations.bottom_right, &line_start_map_pos_adj, &line_end_map_pos_adj, &this.map_dimensions.right, &this.map_dimensions.bottom);
+
+        const map_coord = this.isoToMapCoord(does_intercept.yes, 0, 0).?;
+
+        //TODO:remove debug
+        if (map_coord.map_array_coord_x == 50 and map_coord.map_array_coord_y == 49) {
+            // @breakpoint();
+        }
+
+        return map_coord;
+    }
+    pub fn coordLineIntercepsMapBottomLeft(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) Coord {
+        const line_start_map_pos_adj = adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
+        const line_end_map_pos_adj = adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
+        const line_pos_adj = adjustLineToWindowPosition(line, map_pos_x, map_pos_y);
+
+        const does_intercept = determineIntercept(&line_pos_adj, &this.map_side_equations.bottom_left, &line_start_map_pos_adj, &line_end_map_pos_adj, &this.map_dimensions.left, &this.map_dimensions.bottom);
+
+        const map_coord = this.isoToMapCoord(does_intercept.yes, 0, 0).?;
+
+        return map_coord;
+    }
+    pub fn coordLineIntercepsMapUpperLeft(this: *const @This(), line: *const LinearEquation, line_start: *const Point, line_end: *const Point, map_pos_x: i32, map_pos_y: i32) Coord {
+        const line_start_map_pos_adj = adjustWindowIsoPointToMapPosition(line_start.*, map_pos_x, map_pos_y);
+        const line_end_map_pos_adj = adjustWindowIsoPointToMapPosition(line_end.*, map_pos_x, map_pos_y);
+        const line_pos_adj = adjustLineToWindowPosition(line, map_pos_x, map_pos_y);
+
+        const does_intercept = determineIntercept(&line_pos_adj, &this.map_side_equations.upper_left, &line_start_map_pos_adj, &line_end_map_pos_adj, &this.map_dimensions.top, &this.map_dimensions.left);
+
+        const map_coord = this.isoToMapCoord(does_intercept.yes, 0, 0).?;
+
+        return map_coord;
     }
 
     pub fn walkMapCoordNorthSingleMove(this: *const @This(), coord: *const Coord) ?Coord {
@@ -226,6 +267,31 @@ pub const IsometricMathUtility = struct {
     }
     pub fn walkMapCoordFullNorthWest(this: *const @This(), coord: *const Coord) Coord {
         _ = this;
-        return walkMapCoordFurthestNorthWest( coord.map_array_coord_y);
+        return walkMapCoordFurthestNorthWest(coord.map_array_coord_y);
     }
 };
+
+fn adjustLineToWindowPosition(line: *const LinearEquation, map_pos_x: i32, map_pos_y: i32) LinearEquation {
+    const line_pos_adj: LinearEquation = switch (line.*) {
+        .has_slope => .{ .has_slope = .{ .m = line.has_slope.m, .b = adjustWindowIsoPointToMapPositionY(line.has_slope.b, map_pos_y) } },
+        .vertical => .{ .vertical = .{ .a = adjustWindowIsoPointToMapPositionX(line.vertical.a, map_pos_x) } },
+    };
+    return line_pos_adj;
+}
+
+//TODO: take a pointer for point
+pub fn adjustWindowIsoPointToMapPosition(point: Point, map_pos_x: i32, map_pos_y: i32) Point {
+    return .{ .x = adjustWindowIsoPointToMapPositionX(point.x, map_pos_x), .y = adjustWindowIsoPointToMapPositionY(point.y, map_pos_y) };
+}
+
+pub fn adjustWindowIsoPointToMapPositionX(x: f32, map_pos_x: i32) f32 {
+    return x + @as(f32, @floatFromInt(map_pos_x));
+}
+
+pub fn adjustWindowIsoPointToMapPositionY(y: f32, map_pos_y: i32) f32 {
+    return y + @as(f32, @floatFromInt(map_pos_y));
+}
+
+pub fn adjustTileOriginPointInIsoToMapMovement(point: Point, map_pos_x: i32, map_pos_y: i32) Point {
+    return .{ .x = point.x - @as(f32, @floatFromInt(map_pos_x)), .y = point.y - @as(f32, @floatFromInt(map_pos_y)) };
+}

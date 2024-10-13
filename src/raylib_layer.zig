@@ -33,6 +33,7 @@ pub const Drawer = struct {
         std.heap.page_allocator.free(this.resources_ground);
     }
 
+    //TODO: remove debug
     const draw_all = false;
 
     pub fn drawMap(this: *@This(), map: *Map) void {
@@ -51,29 +52,213 @@ pub const Drawer = struct {
         }
 
         if (!draw_all) {
+
+            //TODO: remove debug
+            if (rl.IsKeyDown(rl.KEY_P)) {
+                @breakpoint();
+            }
+
             map.tile_iterator.initialize(map.map_position_x, map.map_position_y);
 
-            var text: [*]const u8 = "";
+            var text_category: [*]const u8 = "";
+            var text_wmsc: [*]const u8 = "";
 
             switch (map.tile_iterator.case_handler.data) {
-                .all_points => text = "ALL_POINTS",
-                .upperleft_upperright_bottomright => text = "UPPERLEFT_UPPERRIGHT_BOTTOMRIGHT",
-                .upperright_bottomright_bottomleft => text = "UPPERRIGHT_BOTTOMRIGHT_BOTTOMLEFT",
-                .bottomright_bottomleft_upperleft => text = "BOTTOMRIGHT_BOTTOMLEFT_UPPERLEFT",
-                .bottomleft_upperleft_upperright => text = "BOTTOMLEFT_UPPERLEFT_UPPERRIGHT",
-                .upperleft_upperright => text = "UPPERLEFT_UPPERRIGHT",
-                .upperright_bottomright => text = "UPPERRIGHT_BOTTOMRIGHT",
-                .bottomright_bottomleft => text = "BOTTOMRIGHT_BOTTOMLEFT",
-                .bottomleft_upperleft => text = "BOTTOMLEFT_UPPERLEFT",
-                .upperleft => text = "UPPERLEFT",
-                .upperright => text = "UPPERRIGHT",
-                .bottomright => text = "BOTTOMRIGHT",
-                .bottomleft => text = "BOTTOMLEFT",
-                .none => text = "NONE",
+                .all_points => {
+                    text_category =
+                        "ALL_POINTS";
+                },
+                .upperleft_upperright_bottomright => {
+                    text_category =
+                        "UPPERLEFT_UPPERRIGHT_BOTTOMRIGHT";
+                },
+                .upperright_bottomright_bottomleft => {
+                    text_category =
+                        "UPPERRIGHT_BOTTOMRIGHT_BOTTOMLEFT";
+                },
+                .bottomright_bottomleft_upperleft => {
+                    text_category =
+                        "BOTTOMRIGHT_BOTTOMLEFT_UPPERLEFT";
+                },
+                .bottomleft_upperleft_upperright => {
+                    text_category =
+                        "BOTTOMLEFT_UPPERLEFT_UPPERRIGHT";
+                },
+                .upperleft_upperright => {
+                    text_category =
+                        "UPPERLEFT_UPPERRIGHT";
+                    switch (map.tile_iterator.case_handler.data.upperleft_upperright.window_map_side_case) {
+                        .bottom_left => {
+                            text_wmsc = "BOTTOM_LEFT";
+                        },
+                        .center => {
+                            text_wmsc = "CENTER";
+                        },
+                        .bottom_right => {
+                            text_wmsc = "BOTTOM_RIGHT";
+                        },
+                        .center_bottom_map_intercept => {
+                            text_wmsc = "CENTER_BOTTOM_MAP_INTERCEPT";
+                        },
+                    }
+                },
+                .upperright_bottomright => {
+                    text_category =
+                        "UPPERRIGHT_BOTTOMRIGHT";
+                    switch (map.tile_iterator.case_handler.data.upperright_bottomright.window_map_side_case) {
+                        .upper_side => {
+                            text_wmsc = "UPPER_SIDE";
+                        },
+                        .center => {
+                            text_wmsc = "CENTER";
+                        },
+                        .bottom_side => {
+                            text_wmsc = "BOTTOM_SIDE";
+                        },
+                        .center_leftside_map_intercept => {
+                            text_wmsc = "CENTER_LEFTSIDE_MAP_INTERCEPT";
+                        },
+                    }
+                },
+                .bottomright_bottomleft => {
+                    text_category =
+                        "BOTTOMRIGHT_BOTTOMLEFT";
+                    switch (map.tile_iterator.case_handler.data.bottomright_bottomleft.window_map_side_case) {
+                        .upper_left => {
+                            text_wmsc = "UPPER_LEFT";
+                        },
+                        .center => {
+                            text_wmsc = "CENTER";
+                        },
+                        .upper_right => {
+                            text_wmsc = "UPPER_RIGHT";
+                        },
+                        .center_upper_map_intercept => {
+                            text_wmsc = "CENTER_UPPER_MAP_INTERCEPT";
+                        },
+                    }
+                },
+                .bottomleft_upperleft => {
+                    text_category =
+                        "BOTTOMLEFT_UPPERLEFT";
+                    switch (map.tile_iterator.case_handler.data.bottomleft_upperleft.window_map_side_case) {
+                        .upper_side => {
+                            text_wmsc = "UPPER_SIDE";
+                        },
+                        .center => {
+                            text_wmsc = "CENTER";
+                        },
+                        .bottom_side => {
+                            text_wmsc = "BOTTOM_SIDE";
+                        },
+                        .center_rightside_map_intercept => {
+                            text_wmsc = "CENTER_RIGHTSIDE_MAP_INTERCEPT";
+                        },
+                    }
+                },
+                .upperleft => {
+                    text_category =
+                        "UPPERLEFT";
+                    switch (map.tile_iterator.case_handler.data.upperleft.window_map_side_case) {
+                        .intercepts_upper_right => {
+                            text_wmsc = "INTERCEPTS_UPPER_RIGHT";
+                        },
+                        .bottom_right => {
+                            text_wmsc = "BOTTOM_RIGHT";
+                        },
+                        .intercepts_bottom_left => {
+                            text_wmsc = "INTERCEPTS_BOTTOM_LEFT";
+                        },
+                    }
+                },
+                .upperright => {
+                    text_category =
+                        "UPPERRIGHT";
+                    switch (map.tile_iterator.case_handler.data.upperright.window_map_side_case) {
+                        .intercepts_upper_left => {
+                            text_wmsc = "INTERCEPTS_UPPER_LEFT";
+                        },
+                        .bottom_left => {
+                            text_wmsc = "BOTTOM_LEFT";
+                        },
+                        .intercepts_bottom_right => {
+                            text_wmsc = "INTERCEPTS_BOTTOM_RIGHT";
+                        },
+                    }
+                },
+                .bottomright => {
+                    text_category =
+                        "BOTTOMRIGHT";
+                    switch (map.tile_iterator.case_handler.data.bottomright.window_map_side_case) {
+                        .intercepts_upper_right => {
+                            text_wmsc = "INTERCEPTS_UPPER_RIGHT";
+                        },
+                        .upper_left => {
+                            text_wmsc = "UPPER_LEFT";
+                        },
+                        .intercepts_bottom_left => {
+                            text_wmsc = "INTERCEPTS_BOTTOM_LEFT";
+                        },
+                    }
+                },
+                .bottomleft => {
+                    text_category =
+                        "BOTTOMLEFT";
+                    switch (map.tile_iterator.case_handler.data.bottomleft.window_map_side_case) {
+                        .intercepts_upper_left => {
+                            text_wmsc = "INTERCEPTS_UPPER_LEFT";
+                        },
+                        .upper_right => {
+                            text_wmsc = "UPPER_RIGHT";
+                        },
+                        .intercepts_bottom_right => {
+                            text_wmsc = "INTERCEPTS_BOTTOM_RIGHT";
+                        },
+                    }
+                },
+                .none => {
+                    text_category =
+                        "NONE";
+                    switch (map.tile_iterator.case_handler.data.none.window_map_side_case) {
+                        .map_inside_window => {
+                            text_wmsc = "MAP_INSIDE_WINDOW";
+                        },
+                        .map_outside_window => {
+                            text_wmsc = "MAP_OUTSIDE_WINDOW";
+                        },
+                        .top => {
+                            text_wmsc = "TOP";
+                        },
+                        .right => {
+                            text_wmsc = "RIGHT";
+                        },
+                        .bottom => {
+                            text_wmsc = "BOTTOM";
+                        },
+                        .left => {
+                            text_wmsc = "LEFT";
+                        },
+                    }
+                },
+            }
+
+            //TODO: remove debug
+            if (rl.IsKeyDown(rl.KEY_L)) {
+                @breakpoint();
             }
 
             while (map.tile_iterator.next()) |tile_coord| {
-                const tile = map.tile_map[indexTwoDimArray(tile_coord.map_array_coord_x, tile_coord.map_array_coord_y, map.map_tiles_width)];
+                if (tile_coord.map_array_coord_x == 50 and tile_coord.map_array_coord_y == 49) {
+                    const dbug: usize = 0;
+                    _ = dbug;
+                }
+
+                const idx = indexTwoDimArray(tile_coord.map_array_coord_x, tile_coord.map_array_coord_y, map.map_tiles_width);
+
+                const tile = map.tile_map[idx];
+
+                const tile_map_size = map.tile_map.len;
+                _ = tile_map_size;
 
                 const ground_tile = @intFromEnum(tile.ground);
                 const ground_tex = this.resources_ground[ground_tile].texture;
@@ -82,7 +267,8 @@ pub const Drawer = struct {
                 rl.DrawTextureEx(ground_tex, .{ .x = iso_coordinates.iso_pix_x, .y = iso_coordinates.iso_pix_y }, 0, 1, rl.WHITE);
             }
 
-            rl.DrawText(text, 10, 70, 22, rl.WHITE);
+            rl.DrawText(text_category, 10, 70, 22, rl.WHITE);
+            rl.DrawText(text_wmsc, 10, 90, 22, rl.WHITE);
         }
     }
 
